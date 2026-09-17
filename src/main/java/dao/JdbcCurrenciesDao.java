@@ -71,12 +71,7 @@ public class JdbcCurrenciesDao implements CurrenciesDao {
                         "Currency with id " + id + " not found");
             }
 
-            return new Currency(
-                    resultSet.getInt("id"),
-                    resultSet.getString("code"),
-                    resultSet.getString("name"),
-                    resultSet.getString("sign")
-            );
+            return mapCurrency(resultSet);
         } catch (SQLException e) {
             throw new InternalServerErrorException(
                     "Error reading currency with id: " + id);
@@ -90,14 +85,8 @@ public class JdbcCurrenciesDao implements CurrenciesDao {
             List<Currency> currencies = new ArrayList<>();
 
             while (resultSet.next()) {
-                currencies.add(new Currency(
-                        resultSet.getInt("id"),
-                        resultSet.getString("code"),
-                        resultSet.getString("name"),
-                        resultSet.getString("sign")
-                ));
+                currencies.add(mapCurrency(resultSet));
             }
-
             return currencies;
         } catch (SQLException e) {
             throw new InternalServerErrorException(
@@ -111,11 +100,7 @@ public class JdbcCurrenciesDao implements CurrenciesDao {
             statement.setString(1, entity.getName());
             statement.setString(2, entity.getSign());
             statement.setString(3, entity.getCode());
-
-            if (statement.executeUpdate() == 0) {
-                throw new ConflictException(
-                        "The currency with code " + entity.getCode() + " does not exist");
-            }
+            statement.executeUpdate();
 
             return readByCode(entity.getCode());
         } catch (SQLException e) {
@@ -128,7 +113,11 @@ public class JdbcCurrenciesDao implements CurrenciesDao {
     public void delete(int id) {
         try(PreparedStatement statement = connection.prepareStatement(SQL_DELETE)) {
             statement.setInt(1, id);
-            statement.executeUpdate();
+
+            if (statement.executeUpdate() == 0) {
+                throw new NotFoundException(
+                        "Currency with ID " + id + " not found");
+            }
         } catch (SQLException e) {
             throw new InternalServerErrorException(
                     "Error deleting currency with id: " + id);
@@ -146,15 +135,19 @@ public class JdbcCurrenciesDao implements CurrenciesDao {
                         "Currency with code " + code + " not found");
             }
 
-            return new Currency(
-                    resultSet.getInt("id"),
-                    resultSet.getString("code"),
-                    resultSet.getString("name"),
-                    resultSet.getString("sign")
-            );
+            return mapCurrency(resultSet);
         } catch (SQLException e) {
             throw new InternalServerErrorException(
                     "Error reading currency by code: " + code);
         }
+    }
+
+    private Currency mapCurrency(ResultSet resultSet) throws SQLException {
+        return new Currency(
+                resultSet.getInt("id"),
+                resultSet.getString("code"),
+                resultSet.getString("name"),
+                resultSet.getString("sign")
+        );
     }
 }

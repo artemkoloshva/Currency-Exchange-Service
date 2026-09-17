@@ -70,25 +70,7 @@ public class JdbcExchangeRatesDao implements ExchangeRatesDao {
                         "Exchange rate with id " + id + " not found");
             }
 
-            Currency base = new Currency(
-                    resultSet.getInt("base_currency_id"),
-                    resultSet.getString("base_currency_code"),
-                    resultSet.getString("base_currency_name"),
-                    resultSet.getString("base_currency_sign")
-            );
-            Currency target = new Currency(
-                    resultSet.getInt("target_currency_id"),
-                    resultSet.getString("target_currency_code"),
-                    resultSet.getString("target_currency_name"),
-                    resultSet.getString("target_currency_sign")
-            );
-
-            return new ExchangeRate(
-                    resultSet.getInt("id"),
-                    base,
-                    target,
-                    resultSet.getFloat("rate")
-            );
+            return mapExchangeRate(resultSet);
         } catch (SQLException e) {
             throw new InternalServerErrorException(
                     "Error reading exchange rate with ID: " + id);
@@ -102,27 +84,8 @@ public class JdbcExchangeRatesDao implements ExchangeRatesDao {
             List<ExchangeRate> exchangeRates = new ArrayList<>();
 
             while (resultSet.next()) {
-                Currency base = new Currency(
-                        resultSet.getInt("base_currency_id"),
-                        resultSet.getString("base_currency_code"),
-                        resultSet.getString("base_currency_name"),
-                        resultSet.getString("base_currency_sign")
-                );
-                Currency target = new Currency(
-                        resultSet.getInt("target_currency_id"),
-                        resultSet.getString("target_currency_code"),
-                        resultSet.getString("target_currency_name"),
-                        resultSet.getString("target_currency_sign")
-                );
-
-                exchangeRates.add(new ExchangeRate(
-                        resultSet.getInt("id"),
-                        base,
-                        target,
-                        resultSet.getFloat("rate")
-                ));
+                exchangeRates.add(mapExchangeRate(resultSet));
             }
-
             return exchangeRates;
         } catch (SQLException e) {
             throw new InternalServerErrorException(
@@ -136,11 +99,7 @@ public class JdbcExchangeRatesDao implements ExchangeRatesDao {
             statement.setFloat(1, entity.getRate());
             statement.setString(2, entity.getBaseCurrency().getCode());
             statement.setString(3, entity.getTargetCurrency().getCode());
-
-            if (statement.executeUpdate() == 0) {
-                throw new ConflictException(
-                        "The exchange rate with code " + entity.getBaseCurrency().getCode() + "/" + entity.getTargetCurrency().getCode() + " does not exist");
-            }
+            statement.executeUpdate();
 
             return read(entity.getId());
         } catch (SQLException e) {
@@ -153,7 +112,11 @@ public class JdbcExchangeRatesDao implements ExchangeRatesDao {
     public void delete(int id) {
         try(PreparedStatement statement = connection.prepareStatement(SQL_DELETE)) {
             statement.setInt(1, id);
-            statement.executeUpdate();
+
+            if (statement.executeUpdate() == 0) {
+                throw new NotFoundException(
+                        "Exchange rate with ID " + id + " not found");
+            }
         } catch (SQLException e) {
             throw new InternalServerErrorException(
                     "Error deleting exchange rate with ID: " + id);
@@ -172,29 +135,38 @@ public class JdbcExchangeRatesDao implements ExchangeRatesDao {
                         "Exchange rate for " + baseCurrencyCode + "/" + targetCurrencyCode + " not found");
             }
 
-            Currency base = new Currency(
-                    resultSet.getInt("base_currency_id"),
-                    resultSet.getString("base_currency_code"),
-                    resultSet.getString("base_currency_name"),
-                    resultSet.getString("base_currency_sign")
-            );
-            Currency target = new Currency(
-                    resultSet.getInt("target_currency_id"),
-                    resultSet.getString("target_currency_code"),
-                    resultSet.getString("target_currency_name"),
-                    resultSet.getString("target_currency_sign")
-            );
-
-            return new ExchangeRate(
-                    resultSet.getInt("id"),
-                    base,
-                    target,
-                    resultSet.getFloat("rate")
-            );
+            return mapExchangeRate(resultSet);
         } catch (SQLException e) {
             throw new InternalServerErrorException(
                     "Error reading exchange rate for " + baseCurrencyCode + "/" + targetCurrencyCode);
 
         }
+    }
+
+    private Currency mapBaseCurrency(ResultSet resultSet) throws SQLException {
+        return new Currency(
+                resultSet.getInt("base_currency_id"),
+                resultSet.getString("base_currency_code"),
+                resultSet.getString("base_currency_name"),
+                resultSet.getString("base_currency_sign")
+        );
+    }
+
+    private Currency mapTargetCurrency(ResultSet resultSet) throws SQLException {
+        return new Currency(
+                resultSet.getInt("target_currency_id"),
+                resultSet.getString("target_currency_code"),
+                resultSet.getString("target_currency_name"),
+                resultSet.getString("target_currency_sign")
+        );
+    }
+
+    private ExchangeRate mapExchangeRate(ResultSet resultSet) throws SQLException {
+        return new ExchangeRate(
+                resultSet.getInt("id"),
+                mapBaseCurrency(resultSet),
+                mapTargetCurrency(resultSet),
+                resultSet.getFloat("rate")
+        );
     }
 }
