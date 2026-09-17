@@ -17,16 +17,42 @@ public class DefaultCurrencyService implements CurrencyService{
     @Override
     public List<CurrencyResponse> getAllCurrencies() {
         List<Currency> currencies = currenciesDao.readAll();
-        return null;
+
+        return currencies.stream()
+                .map(this::toResponse)
+                .toList();
     }
 
     @Override
     public CurrencyResponse getCurrencyByCode(String code) {
-        return null;
+        Currency requestCurrency = currenciesDao.readByCode(code);
+
+        return toResponse(requestCurrency);
     }
 
     @Override
     public CurrencyResponse addCurrency(CurrencyRequest currencyRequest) {
-        return null;
+        Currency requestCurrency = toEntity(currencyRequest);
+        Currency addedCurrency = currenciesDao.create(requestCurrency);
+
+        return toResponse(addedCurrency);
+    }
+
+    private CurrencyResponse toResponse(Currency currency) {
+        return new CurrencyResponse(
+                currency.getId(),
+                currency.getCode(),
+                currency.getName(),
+                currency.getSign()
+        );
+    }
+
+    private Currency toEntity(CurrencyRequest currencyRequest) {
+        return new Currency(
+                0,
+                currencyRequest.getCode(),
+                currencyRequest.getName(),
+                currencyRequest.getSign()
+        );
     }
 }
