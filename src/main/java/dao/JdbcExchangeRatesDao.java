@@ -143,6 +143,38 @@ public class JdbcExchangeRatesDao implements ExchangeRatesDao {
         }
     }
 
+    public ExchangeRate createByCodes(String baseCurrencyCode, String targetCurrencyCode, float rate) {
+        try(PreparedStatement statement = connection.prepareStatement(SQL_CREATE)) {
+            statement.setString(1, baseCurrencyCode);
+            statement.setString(2, targetCurrencyCode);
+            statement.setFloat(3, rate);
+
+            if (statement.executeUpdate() == 0) {
+                throw new ConflictException(
+                        "Error creating exchange rate for " + baseCurrencyCode + "/" + targetCurrencyCode);
+            }
+
+            return readByCurrencyCodes(baseCurrencyCode, targetCurrencyCode);
+        } catch (SQLException e) {
+            throw new InternalServerErrorException(
+                    "Error creating exchange rate for " + baseCurrencyCode + "/" + targetCurrencyCode);
+        }
+    }
+
+    public ExchangeRate updateByCodes(String baseCurrencyCode, String targetCurrencyCode, float rate) {
+        try(PreparedStatement statement = connection.prepareStatement(SQL_UPDATE)) {
+            statement.setFloat(1, rate);
+            statement.setString(2, baseCurrencyCode);
+            statement.setString(3, targetCurrencyCode);
+            statement.executeUpdate();
+
+            return readByCurrencyCodes(baseCurrencyCode, targetCurrencyCode);
+        } catch (SQLException e) {
+            throw new InternalServerErrorException(
+                    "Error updating exchange rate for " + baseCurrencyCode + "/" + targetCurrencyCode);
+        }
+    }
+
     private Currency mapBaseCurrency(ResultSet resultSet) throws SQLException {
         return new Currency(
                 resultSet.getInt("base_currency_id"),
