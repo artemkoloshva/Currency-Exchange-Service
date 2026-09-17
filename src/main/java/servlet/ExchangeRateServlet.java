@@ -28,6 +28,7 @@ public class ExchangeRateServlet extends AbstractJsonServlet {
             }
 
             String code = pathInfo.substring(1);
+
             if (code.length() != 6) {
                 writeError(response, HttpServletResponse.SC_BAD_REQUEST,
                         "Incorrect exchange rate");
@@ -38,11 +39,9 @@ public class ExchangeRateServlet extends AbstractJsonServlet {
                     code.substring(0, 3), code.substring(3));
             writeJson(response, HttpServletResponse.SC_OK, exchangeRateResponse);
         } catch (NotFoundException e) {
-            writeError(response, HttpServletResponse.SC_NOT_FOUND,
-                    "An exchange rate for the pair was not found");
+            writeError(response, HttpServletResponse.SC_NOT_FOUND, e.getMessage());
         } catch (InternalServerErrorException e) {
-            writeError(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
-                    "Failed to load exchange rate");
+            writeError(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage());
         }
     }
 
@@ -86,15 +85,10 @@ public class ExchangeRateServlet extends AbstractJsonServlet {
             ExchangeRateResponse exchangeRateResponse = exchangeRateService.updateExchangeRate(exchangeRateRequest);
 
             writeJson(response, HttpServletResponse.SC_OK, exchangeRateResponse);
-        } catch (IllegalArgumentException e) {
-            writeError(response, HttpServletResponse.SC_BAD_REQUEST,
-                    "Incorrectly entered rate");
         } catch (NotFoundException e) {
-            writeError(response, HttpServletResponse.SC_NOT_FOUND,
-                    "A currency pair with this code does not exist in the database");
+            writeError(response, HttpServletResponse.SC_NOT_FOUND, e.getMessage());
         } catch (InternalServerErrorException e) {
-            writeError(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
-                    "Failed to load exchange rate");
+            writeError(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage());
         }
     }
 

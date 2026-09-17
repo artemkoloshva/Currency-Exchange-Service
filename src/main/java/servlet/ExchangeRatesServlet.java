@@ -23,8 +23,7 @@ public class ExchangeRatesServlet extends AbstractJsonServlet {
             List<ExchangeRateResponse> exchangeRateResponses = exchangeRateService.getAllExchangeRates();
             writeJson(response, HttpServletResponse.SC_OK, exchangeRateResponses);
         } catch (InternalServerErrorException e) {
-            writeError(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
-                    "Failed to load exchange rate");
+            writeError(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage());
         }
     }
 
@@ -54,18 +53,12 @@ public class ExchangeRatesServlet extends AbstractJsonServlet {
             ExchangeRateResponse exchangeRateResponse = exchangeRateService.addExchangeRate(exchangeRateRequest);
 
             writeJson(response, HttpServletResponse.SC_CREATED, exchangeRateResponse);
-        } catch (IllegalArgumentException e) {
-            writeError(response, HttpServletResponse.SC_BAD_REQUEST,
-                    "Incorrectly entered rate");
         } catch (ConflictException e) {
-            writeError(response, HttpServletResponse.SC_CONFLICT,
-                    "A currency pair with this code already exists");
+            writeError(response, HttpServletResponse.SC_CONFLICT, e.getMessage());
         } catch (NotFoundException e) {
-            writeError(response, HttpServletResponse.SC_NOT_FOUND,
-                    "One (or both) currency from a currency pair does not exist in the database");
+            writeError(response, HttpServletResponse.SC_NOT_FOUND, e.getMessage());
         } catch (InternalServerErrorException e) {
-            writeError(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
-                    "Failed to load exchange rate");
+            writeError(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage());
         }
     }
 }

@@ -44,14 +44,9 @@ public class ExchangeServlet extends AbstractJsonServlet {
 
             writeJson(response, HttpServletResponse.SC_OK, exchangeResponse);
         } catch (NotFoundException e) {
-            writeError(response, HttpServletResponse.SC_NOT_FOUND,
-                    "Currency not found");
-        } catch (IllegalArgumentException e) {
-            writeError(response, HttpServletResponse.SC_BAD_REQUEST,
-                    "Incorrect exchange request");
-        } catch (InternalServerErrorException e) {
-            writeError(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
-                    "Failed to exchange currency");
+            writeError(response, HttpServletResponse.SC_NOT_FOUND, e.getMessage());
+        }  catch (InternalServerErrorException e) {
+            writeError(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage());
         }
     }
 }

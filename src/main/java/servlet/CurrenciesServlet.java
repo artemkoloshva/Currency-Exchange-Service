@@ -24,8 +24,7 @@ public class CurrenciesServlet extends AbstractJsonServlet {
             List<CurrencyResponse> currencyResponses = currencyService.getAllCurrencies();
             writeJson(response, HttpServletResponse.SC_OK, currencyResponses);
         } catch (InternalServerErrorException e) {
-            writeError(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
-                    "Failed to load currencies");
+            writeError(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage());
         }
     }
 
@@ -47,11 +46,9 @@ public class CurrenciesServlet extends AbstractJsonServlet {
 
             writeJson(response, HttpServletResponse.SC_CREATED, currencyResponse);
         } catch (ConflictException e) {
-            writeError(response, HttpServletResponse.SC_CONFLICT,
-                    "Currency with this code already exists");
+            writeError(response, HttpServletResponse.SC_CONFLICT, e.getMessage());
         } catch (InternalServerErrorException e) {
-            writeError(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
-                    "Failed to add currency");
+            writeError(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage());
         }
     }
 }

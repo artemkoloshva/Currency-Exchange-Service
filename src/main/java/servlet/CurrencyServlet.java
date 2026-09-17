@@ -31,11 +31,9 @@ public class CurrencyServlet extends AbstractJsonServlet {
 
             writeJson(response, HttpServletResponse.SC_OK, currencyResponse);
         } catch (NotFoundException e) {
-            writeError(response, HttpServletResponse.SC_NOT_FOUND,
-                    "Currency not found");
+            writeError(response, HttpServletResponse.SC_NOT_FOUND, e.getMessage());
         } catch (InternalServerErrorException e) {
-            writeError(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
-                    "Failed to load currency");
+            writeError(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage());
         }
     }
 }
