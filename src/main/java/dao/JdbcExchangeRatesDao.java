@@ -1,10 +1,10 @@
 package dao;
 
+import entity.Currency;
 import entity.ExchangeRate;
 import exception.ConflictException;
 import exception.InternalServerErrorException;
 import exception.NotFoundException;
-import mapper.ExchangeRateResultSetMapper;
 import util.SqlLoader;
 
 import java.io.IOException;
@@ -70,7 +70,7 @@ public class JdbcExchangeRatesDao implements ExchangeRatesDao {
                         "Exchange rate with id " + id + " not found");
             }
 
-            return new ExchangeRateResultSetMapper().map(resultSet);
+            return mapExchangeRate(resultSet);
         } catch (SQLException e) {
             throw new InternalServerErrorException(
                     "Error reading exchange rate with ID: " + id);
@@ -84,7 +84,7 @@ public class JdbcExchangeRatesDao implements ExchangeRatesDao {
             List<ExchangeRate> exchangeRates = new ArrayList<>();
 
             while (resultSet.next()) {
-                exchangeRates.add(new ExchangeRateResultSetMapper().map(resultSet));
+                exchangeRates.add(mapExchangeRate(resultSet));
             }
             return exchangeRates;
         } catch (SQLException e) {
@@ -135,11 +135,38 @@ public class JdbcExchangeRatesDao implements ExchangeRatesDao {
                         "Exchange rate for " + baseCurrencyCode + "/" + targetCurrencyCode + " not found");
             }
 
-            return new ExchangeRateResultSetMapper().map(resultSet);
+            return mapExchangeRate(resultSet);
         } catch (SQLException e) {
             throw new InternalServerErrorException(
                     "Error reading exchange rate for " + baseCurrencyCode + "/" + targetCurrencyCode);
 
         }
+    }
+
+    private Currency mapBaseCurrency(ResultSet resultSet) throws SQLException {
+        return new Currency(
+                resultSet.getInt("base_currency_id"),
+                resultSet.getString("base_currency_code"),
+                resultSet.getString("base_currency_name"),
+                resultSet.getString("base_currency_sign")
+        );
+    }
+
+    private Currency mapTargetCurrency(ResultSet resultSet) throws SQLException {
+        return new Currency(
+                resultSet.getInt("target_currency_id"),
+                resultSet.getString("target_currency_code"),
+                resultSet.getString("target_currency_name"),
+                resultSet.getString("target_currency_sign")
+        );
+    }
+
+    private ExchangeRate mapExchangeRate(ResultSet resultSet) throws SQLException {
+        return new ExchangeRate(
+                resultSet.getInt("id"),
+                mapBaseCurrency(resultSet),
+                mapTargetCurrency(resultSet),
+                resultSet.getFloat("rate")
+        );
     }
 }
