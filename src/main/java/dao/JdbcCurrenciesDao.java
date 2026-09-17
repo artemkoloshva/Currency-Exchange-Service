@@ -4,6 +4,7 @@ import entity.Currency;
 import exception.ConflictException;
 import exception.InternalServerErrorException;
 import exception.NotFoundException;
+import mapper.MapperCurrencyResultSet;
 import util.SqlLoader;
 
 import java.io.IOException;
@@ -71,7 +72,7 @@ public class JdbcCurrenciesDao implements CurrenciesDao {
                         "Currency with id " + id + " not found");
             }
 
-            return mapCurrency(resultSet);
+            return new MapperCurrencyResultSet().map(resultSet);
         } catch (SQLException e) {
             throw new InternalServerErrorException(
                     "Error reading currency with id: " + id);
@@ -85,7 +86,7 @@ public class JdbcCurrenciesDao implements CurrenciesDao {
             List<Currency> currencies = new ArrayList<>();
 
             while (resultSet.next()) {
-                currencies.add(mapCurrency(resultSet));
+                currencies.add(new MapperCurrencyResultSet().map(resultSet));
             }
             return currencies;
         } catch (SQLException e) {
@@ -135,19 +136,10 @@ public class JdbcCurrenciesDao implements CurrenciesDao {
                         "Currency with code " + code + " not found");
             }
 
-            return mapCurrency(resultSet);
+            return new MapperCurrencyResultSet().map(resultSet);
         } catch (SQLException e) {
             throw new InternalServerErrorException(
                     "Error reading currency by code: " + code);
         }
-    }
-
-    private Currency mapCurrency(ResultSet resultSet) throws SQLException {
-        return new Currency(
-                resultSet.getInt("id"),
-                resultSet.getString("code"),
-                resultSet.getString("name"),
-                resultSet.getString("sign")
-        );
     }
 }
