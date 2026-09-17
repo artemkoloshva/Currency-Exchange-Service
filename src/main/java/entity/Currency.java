@@ -1,4 +1,4 @@
-package model;
+package entity;
 
 public class Currency {
     private final int id;
