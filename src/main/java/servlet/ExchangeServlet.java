@@ -1,5 +1,7 @@
 package servlet;
 
+import dao.JdbcCurrenciesDao;
+import dao.JdbcExchangeRatesDao;
 import dto.ExchangeRequest;
 import dto.ExchangeResponse;
 import exception.InternalServerErrorException;
@@ -14,13 +16,13 @@ import java.io.IOException;
 
 @WebServlet("/exchange")
 public class ExchangeServlet extends AbstractJsonServlet {
-    private final ExchangeService exchangeService = new DefaultExchangeService();
+    private final ExchangeService exchangeService = new DefaultExchangeService(new JdbcCurrenciesDao(), new JdbcExchangeRatesDao());
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
         try {
-            String from = request.getParameter("from");
-            String to = request.getParameter("to");
+            String from = request.getParameter("from").toUpperCase();
+            String to = request.getParameter("to").toUpperCase();
             String amount = request.getParameter("amount");
 
             if (isBlank(from) || isBlank(to) || isBlank(amount)) {

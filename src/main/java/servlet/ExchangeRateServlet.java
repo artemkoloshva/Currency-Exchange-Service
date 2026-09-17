@@ -1,5 +1,7 @@
 package servlet;
 
+import dao.ExchangeRatesDao;
+import dao.JdbcExchangeRatesDao;
 import dto.ExchangeRateRequest;
 import dto.ExchangeRateResponse;
 import exception.InternalServerErrorException;
@@ -15,7 +17,7 @@ import java.io.IOException;
 
 @WebServlet("/exchangeRate/*")
 public class ExchangeRateServlet extends AbstractJsonServlet {
-    private final ExchangeRateService exchangeRateService = new DefaultExchangeRateService();
+    private final ExchangeRateService exchangeRateService = new DefaultExchangeRateService(new JdbcExchangeRatesDao());
 
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
         try {
@@ -27,7 +29,7 @@ public class ExchangeRateServlet extends AbstractJsonServlet {
                 return;
             }
 
-            String code = pathInfo.substring(1);
+            String code = pathInfo.substring(1).toUpperCase();
 
             if (code.length() != 6) {
                 writeError(response, HttpServletResponse.SC_BAD_REQUEST,
@@ -55,7 +57,7 @@ public class ExchangeRateServlet extends AbstractJsonServlet {
                 return;
             }
 
-            String code = pathInfo.substring(1);
+            String code = pathInfo.substring(1).toUpperCase();
 
             if (code.length() != 6) {
                 writeError(response, HttpServletResponse.SC_BAD_REQUEST,

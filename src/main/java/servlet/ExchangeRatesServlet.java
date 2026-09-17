@@ -1,5 +1,6 @@
 package servlet;
 
+import dao.JdbcExchangeRatesDao;
 import dto.ExchangeRateRequest;
 import dto.ExchangeRateResponse;
 import exception.ConflictException;
@@ -16,7 +17,7 @@ import java.util.List;
 
 @WebServlet("/exchangeRates")
 public class ExchangeRatesServlet extends AbstractJsonServlet {
-    private final ExchangeRateService exchangeRateService = new DefaultExchangeRateService();
+    private final ExchangeRateService exchangeRateService = new DefaultExchangeRateService(new JdbcExchangeRatesDao());
 
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
         try {
@@ -29,8 +30,8 @@ public class ExchangeRatesServlet extends AbstractJsonServlet {
 
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException {
         try {
-            String baseCurrencyCode = request.getParameter("baseCurrencyCode");
-            String targetCurrencyCode = request.getParameter("targetCurrencyCode");
+            String baseCurrencyCode = request.getParameter("baseCurrencyCode").toUpperCase();
+            String targetCurrencyCode = request.getParameter("targetCurrencyCode").toUpperCase();
             String rate = request.getParameter("rate");
 
             if (isBlank(baseCurrencyCode) || isBlank(targetCurrencyCode) || isBlank(rate)) {

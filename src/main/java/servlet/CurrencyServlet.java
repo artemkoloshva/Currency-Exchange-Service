@@ -1,5 +1,6 @@
 package servlet;
 
+import dao.JdbcCurrenciesDao;
 import dto.CurrencyResponse;
 import exception.InternalServerErrorException;
 import exception.NotFoundException;
@@ -13,7 +14,7 @@ import java.io.IOException;
 
 @WebServlet("/currency/*")
 public class CurrencyServlet extends AbstractJsonServlet {
-    private final CurrencyService currencyService = new DefaultCurrencyService();
+    private final CurrencyService currencyService = new DefaultCurrencyService(new JdbcCurrenciesDao());
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
@@ -26,7 +27,14 @@ public class CurrencyServlet extends AbstractJsonServlet {
                 return;
             }
 
-            String code = pathInfo.substring(1);
+            String code = pathInfo.substring(1).toUpperCase();
+
+            if (code.length() != 3) {
+                writeError(response, HttpServletResponse.SC_BAD_REQUEST,
+                        "Incorrect currency code");
+                return;
+            }
+
             CurrencyResponse currencyResponse = currencyService.getCurrencyByCode(code);
 
             writeJson(response, HttpServletResponse.SC_OK, currencyResponse);

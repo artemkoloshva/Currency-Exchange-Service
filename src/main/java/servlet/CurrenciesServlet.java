@@ -1,5 +1,6 @@
 package servlet;
 
+import dao.JdbcCurrenciesDao;
 import dto.CurrencyRequest;
 import dto.CurrencyResponse;
 import exception.BadRequestException;
@@ -16,7 +17,7 @@ import java.util.List;
 
 @WebServlet("/currencies")
 public class CurrenciesServlet extends AbstractJsonServlet {
-    private final CurrencyService currencyService = new DefaultCurrencyService();
+    private final CurrencyService currencyService = new DefaultCurrencyService(new JdbcCurrenciesDao());
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
@@ -41,7 +42,7 @@ public class CurrenciesServlet extends AbstractJsonServlet {
                 return;
             }
 
-            CurrencyRequest currencyRequest = new CurrencyRequest(code.trim(), name.trim(), sign.trim());
+            CurrencyRequest currencyRequest = new CurrencyRequest(code.trim().toUpperCase(), name.trim(), sign.trim());
             CurrencyResponse currencyResponse = currencyService.addCurrency(currencyRequest);
 
             writeJson(response, HttpServletResponse.SC_CREATED, currencyResponse);
