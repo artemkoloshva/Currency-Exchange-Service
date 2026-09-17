@@ -4,7 +4,7 @@ import entity.Currency;
 
 import java.sql.ResultSet;
 
-public class MapperTargetCurrencyResultSet implements Mapper<Currency, ResultSet> {
+public class TargetCurrencyResultSetMapper implements Mapper<Currency, ResultSet> {
     @Override
     public Currency map(ResultSet resultSet) {
         try {

@@ -1,11 +1,10 @@
 package dao;
 
-import entity.Currency;
 import entity.ExchangeRate;
 import exception.ConflictException;
 import exception.InternalServerErrorException;
 import exception.NotFoundException;
-import mapper.MapperExchangeRateResultSet;
+import mapper.ExchangeRateResultSetMapper;
 import util.SqlLoader;
 
 import java.io.IOException;
@@ -71,7 +70,7 @@ public class JdbcExchangeRatesDao implements ExchangeRatesDao {
                         "Exchange rate with id " + id + " not found");
             }
 
-            return new MapperExchangeRateResultSet().map(resultSet);
+            return new ExchangeRateResultSetMapper().map(resultSet);
         } catch (SQLException e) {
             throw new InternalServerErrorException(
                     "Error reading exchange rate with ID: " + id);
@@ -85,7 +84,7 @@ public class JdbcExchangeRatesDao implements ExchangeRatesDao {
             List<ExchangeRate> exchangeRates = new ArrayList<>();
 
             while (resultSet.next()) {
-                exchangeRates.add(new MapperExchangeRateResultSet().map(resultSet));
+                exchangeRates.add(new ExchangeRateResultSetMapper().map(resultSet));
             }
             return exchangeRates;
         } catch (SQLException e) {
@@ -136,7 +135,7 @@ public class JdbcExchangeRatesDao implements ExchangeRatesDao {
                         "Exchange rate for " + baseCurrencyCode + "/" + targetCurrencyCode + " not found");
             }
 
-            return new MapperExchangeRateResultSet().map(resultSet);
+            return new ExchangeRateResultSetMapper().map(resultSet);
         } catch (SQLException e) {
             throw new InternalServerErrorException(
                     "Error reading exchange rate for " + baseCurrencyCode + "/" + targetCurrencyCode);
