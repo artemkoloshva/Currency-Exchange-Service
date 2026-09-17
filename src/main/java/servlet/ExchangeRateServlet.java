@@ -15,7 +15,7 @@ import java.io.IOException;
 
 @WebServlet("/exchangeRate/*")
 public class ExchangeRateServlet extends AbstractJsonServlet {
-    private static final ExchangeRateService exchangeRatesService = new DefaultExchangeRateService();
+    private final ExchangeRateService exchangeRateService = new DefaultExchangeRateService();
 
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
         try {
@@ -34,7 +34,7 @@ public class ExchangeRateServlet extends AbstractJsonServlet {
                 return;
             }
 
-            ExchangeRateResponse exchangeRateResponse = exchangeRatesService.getExchangeRateByCodes(
+            ExchangeRateResponse exchangeRateResponse = exchangeRateService.getExchangeRateByCodes(
                     code.substring(0, 3), code.substring(3));
             writeJson(response, HttpServletResponse.SC_OK, exchangeRateResponse);
         } catch (NotFoundException e) {
@@ -57,6 +57,7 @@ public class ExchangeRateServlet extends AbstractJsonServlet {
             }
 
             String code = pathInfo.substring(1);
+
             if (code.length() != 6) {
                 writeError(response, HttpServletResponse.SC_BAD_REQUEST,
                         "Incorrect exchange rate");
@@ -64,6 +65,7 @@ public class ExchangeRateServlet extends AbstractJsonServlet {
             }
 
             String rate = request.getParameter("rate");
+
             if (isBlank(rate)) {
                 writeError(response, HttpServletResponse.SC_BAD_REQUEST,
                         "The required form field is missing");
@@ -71,6 +73,7 @@ public class ExchangeRateServlet extends AbstractJsonServlet {
             }
 
             float floatRate;
+
             try {
                 floatRate = Float.parseFloat(rate.trim());
             } catch (NumberFormatException e) {
@@ -79,9 +82,9 @@ public class ExchangeRateServlet extends AbstractJsonServlet {
                 return;
             }
 
-            ExchangeRateRequest exchangeRateRequest = new ExchangeRateRequest(
-                    code.substring(0, 3), code.substring(3), floatRate);
-            ExchangeRateResponse exchangeRateResponse = exchangeRatesService.updateExchangeRate(exchangeRateRequest);
+            ExchangeRateRequest exchangeRateRequest = new ExchangeRateRequest(code.substring(0, 3), code.substring(3), floatRate);
+            ExchangeRateResponse exchangeRateResponse = exchangeRateService.updateExchangeRate(exchangeRateRequest);
+
             writeJson(response, HttpServletResponse.SC_OK, exchangeRateResponse);
         } catch (IllegalArgumentException e) {
             writeError(response, HttpServletResponse.SC_BAD_REQUEST,

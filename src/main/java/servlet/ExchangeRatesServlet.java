@@ -16,11 +16,11 @@ import java.util.List;
 
 @WebServlet("/exchangeRates")
 public class ExchangeRatesServlet extends AbstractJsonServlet {
-    private static final ExchangeRateService exchangeRatesService = new DefaultExchangeRateService();
+    private final ExchangeRateService exchangeRateService = new DefaultExchangeRateService();
 
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
         try {
-            List<ExchangeRateResponse> exchangeRateResponses = exchangeRatesService.getAllExchangeRates();
+            List<ExchangeRateResponse> exchangeRateResponses = exchangeRateService.getAllExchangeRates();
             writeJson(response, HttpServletResponse.SC_OK, exchangeRateResponses);
         } catch (InternalServerErrorException e) {
             writeError(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
@@ -41,6 +41,7 @@ public class ExchangeRatesServlet extends AbstractJsonServlet {
             }
 
             float floatRate;
+
             try {
                 floatRate = Float.parseFloat(rate.trim());
             } catch (NumberFormatException e) {
@@ -49,9 +50,8 @@ public class ExchangeRatesServlet extends AbstractJsonServlet {
                 return;
             }
 
-            ExchangeRateRequest exchangeRateRequest = new ExchangeRateRequest(
-                    baseCurrencyCode, targetCurrencyCode, floatRate);
-            ExchangeRateResponse exchangeRateResponse = exchangeRatesService.addExchangeRate(exchangeRateRequest);
+            ExchangeRateRequest exchangeRateRequest = new ExchangeRateRequest(baseCurrencyCode, targetCurrencyCode, floatRate);
+            ExchangeRateResponse exchangeRateResponse = exchangeRateService.addExchangeRate(exchangeRateRequest);
 
             writeJson(response, HttpServletResponse.SC_CREATED, exchangeRateResponse);
         } catch (IllegalArgumentException e) {

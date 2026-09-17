@@ -14,7 +14,7 @@ import java.io.IOException;
 
 @WebServlet("/exchange")
 public class ExchangeServlet extends AbstractJsonServlet {
-    private static final ExchangeService exchangeService = new DefaultExchangeService();
+    private final ExchangeService exchangeService = new DefaultExchangeService();
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
@@ -30,6 +30,7 @@ public class ExchangeServlet extends AbstractJsonServlet {
             }
 
             float parsedAmount;
+
             try {
                 parsedAmount = Float.parseFloat(amount.trim());
             } catch (NumberFormatException e) {
@@ -38,11 +39,7 @@ public class ExchangeServlet extends AbstractJsonServlet {
                 return;
             }
 
-            ExchangeRequest exchangeRequest = new ExchangeRequest(
-                    from.trim().toUpperCase(),
-                    to.trim().toUpperCase(),
-                    parsedAmount
-            );
+            ExchangeRequest exchangeRequest = new ExchangeRequest(from.trim().toUpperCase(), to.trim().toUpperCase(), parsedAmount);
             ExchangeResponse exchangeResponse = exchangeService.exchange(exchangeRequest);
 
             writeJson(response, HttpServletResponse.SC_OK, exchangeResponse);
