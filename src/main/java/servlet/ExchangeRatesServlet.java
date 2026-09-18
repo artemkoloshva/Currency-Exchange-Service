@@ -9,15 +9,15 @@ import exception.NotFoundException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import service.DefaultExchangeRateService;
-import service.ExchangeRateService;
+import service.DefaultExchangeService;
+import service.ExchangeService;
 
 import java.io.IOException;
 import java.util.List;
 
 @WebServlet("/exchangeRates")
 public class ExchangeRatesServlet extends AbstractJsonServlet {
-    private final ExchangeRateService exchangeRateService = new DefaultExchangeRateService(new JdbcExchangeRatesDao());
+    private final ExchangeService exchangeRateService = new DefaultExchangeService(new JdbcExchangeRatesDao());
 
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
         try {

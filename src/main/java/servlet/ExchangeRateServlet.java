@@ -1,6 +1,5 @@
 package servlet;
 
-import dao.ExchangeRatesDao;
 import dao.JdbcExchangeRatesDao;
 import dto.ExchangeRateRequest;
 import dto.ExchangeRateResponse;
@@ -10,14 +9,14 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import service.DefaultExchangeRateService;
-import service.ExchangeRateService;
+import service.DefaultExchangeService;
+import service.ExchangeService;
 
 import java.io.IOException;
 
 @WebServlet("/exchangeRate/*")
 public class ExchangeRateServlet extends AbstractJsonServlet {
-    private final ExchangeRateService exchangeRateService = new DefaultExchangeRateService(new JdbcExchangeRatesDao());
+    private final ExchangeService exchangeRateService = new DefaultExchangeService(new JdbcExchangeRatesDao());
 
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
         try {
