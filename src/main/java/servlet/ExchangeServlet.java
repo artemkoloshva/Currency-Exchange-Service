@@ -16,7 +16,7 @@ import java.io.IOException;
 
 @WebServlet("/exchange")
 public class ExchangeServlet extends AbstractJsonServlet {
-    private final ExchangeService exchangeService = new DefaultExchangeService(new JdbcCurrenciesDao(), new JdbcExchangeRatesDao());
+    private final ExchangeService exchangeService = new DefaultExchangeService(new JdbcExchangeRatesDao());
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
