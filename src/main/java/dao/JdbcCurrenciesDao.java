@@ -87,6 +87,7 @@ public class JdbcCurrenciesDao implements CurrenciesDao {
             while (resultSet.next()) {
                 currencies.add(mapCurrency(resultSet));
             }
+
             return currencies;
         } catch (SQLException e) {
             throw new InternalServerErrorException(
