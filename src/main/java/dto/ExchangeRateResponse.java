@@ -6,17 +6,10 @@ public class ExchangeRateResponse {
     private final CurrencyResponse targetCurrency;
     private final float rate;
 
-    public ExchangeRateResponse(int id, String baseCurrencyCode, String targetCurrencyCode, float rate) {
-        this(id,
-                new CurrencyResponse(0, baseCurrencyCode, baseCurrencyCode, ""),
-                new CurrencyResponse(0, targetCurrencyCode, targetCurrencyCode, ""),
-                rate);
-    }
-
-    public ExchangeRateResponse(int id, CurrencyResponse baseCurrency, CurrencyResponse targetCurrency, float rate) {
+    public ExchangeRateResponse(int id, CurrencyResponse base, CurrencyResponse target, float rate) {
         this.id = id;
-        this.baseCurrency = baseCurrency;
-        this.targetCurrency = targetCurrency;
+        this.baseCurrency = base;
+        this.targetCurrency = target;
         this.rate = rate;
     }
 
@@ -28,16 +21,8 @@ public class ExchangeRateResponse {
         return baseCurrency;
     }
 
-    public CurrencyResponse getTargetCurrency() {
+    public CurrencyResponse getTarget() {
         return targetCurrency;
-    }
-
-    public String getBaseCurrencyCode() {
-        return baseCurrency != null ? baseCurrency.getCode() : null;
-    }
-
-    public String getTargetCurrencyCode() {
-        return targetCurrency != null ? targetCurrency.getCode() : null;
     }
 
     public float getRate() {

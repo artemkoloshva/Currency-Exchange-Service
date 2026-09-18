@@ -25,10 +25,6 @@ public class CurrencyResponse {
         return name;
     }
 
-    public String getFullName() {
-        return name;
-    }
-
     public String getSign() {
         return sign;
     }

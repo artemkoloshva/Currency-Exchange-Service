@@ -1,26 +1,28 @@
 package dto;
 
+import entity.Currency;
+
 public class ExchangeResponse {
-    private final String baseCurrencyCode;
-    private final String targetCurrencyCode;
+    private final CurrencyResponse baseCurrency;
+    private final CurrencyResponse targetCurrency;
     private final float rate;
     private final float amount;
     private final float convertedAmount;
 
-    public ExchangeResponse(String baseCurrencyCode, String targetCurrencyCode, float rate, float amount, float convertedAmount) {
-        this.baseCurrencyCode = baseCurrencyCode;
-        this.targetCurrencyCode = targetCurrencyCode;
+    public ExchangeResponse(CurrencyResponse baseCurrency, CurrencyResponse targetCurrency, float rate, float amount, float convertedAmount) {
+        this.baseCurrency = baseCurrency;
+        this.targetCurrency = targetCurrency;
         this.rate = rate;
         this.amount = amount;
         this.convertedAmount = convertedAmount;
     }
 
-    public String getBaseCurrencyCode() {
-        return baseCurrencyCode;
+    public CurrencyResponse getBaseCurrency() {
+        return baseCurrency;
     }
 
-    public String getTargetCurrencyCode() {
-        return targetCurrencyCode;
+    public CurrencyResponse getTargetCurrency() {
+        return targetCurrency;
     }
 
     public float getRate() {
