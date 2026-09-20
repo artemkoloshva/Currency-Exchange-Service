@@ -3,6 +3,7 @@ package servlet;
 import dao.JdbcExchangeRatesDao;
 import dto.ExchangeRateRequest;
 import dto.ExchangeRateResponse;
+import exception.BadRequestException;
 import exception.ConflictException;
 import exception.InternalServerErrorException;
 import exception.NotFoundException;
@@ -54,6 +55,8 @@ public class ExchangeRatesServlet extends AbstractJsonServlet {
             ExchangeRateResponse exchangeRateResponse = exchangeRateService.addExchangeRate(exchangeRateRequest);
 
             writeJson(response, HttpServletResponse.SC_CREATED, exchangeRateResponse);
+        } catch (BadRequestException e) {
+            writeError(response, HttpServletResponse.SC_BAD_REQUEST, e.getMessage());
         } catch (ConflictException e) {
             writeError(response, HttpServletResponse.SC_CONFLICT, e.getMessage());
         } catch (NotFoundException e) {
