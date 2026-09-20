@@ -8,6 +8,7 @@ import exception.BadRequestException;
 import exception.NotFoundException;
 
 import java.util.List;
+import java.util.Optional;
 
 public class DefaultExchangeService implements ExchangeService {
     private final ExchangeRatesDao exchangeRatesDao;
@@ -70,45 +71,70 @@ public class DefaultExchangeService implements ExchangeService {
     }
 
     public ExchangeResponse exchange(ExchangeRequest request) {
-        String baseCurrencyCode = request.getBaseCurrencyCode();
-        String targetCurrencyCode = request.getTargetCurrencyCode();
+        String baseCode = request.getBaseCurrencyCode();
+        String targetCode = request.getTargetCurrencyCode();
         float amount = request.getAmount();
 
-        ExchangeRate direct = tryGetRate(baseCurrencyCode, targetCurrencyCode);
+        ExchangeRate rate = findRate(baseCode, targetCode)
+                .or(() -> findRateViaUsd(baseCode, targetCode))
+                .orElseThrow(() -> new NotFoundException(
+                        "Exchange rate not found for " + baseCode + " to " + targetCode));
 
-        if (direct != null) {
-            float convertedAmount = convertCurrency(direct, amount);
-            return toResponse(direct, amount, convertedAmount);
-        }
-
-        direct = tryGetRate(targetCurrencyCode, baseCurrencyCode);
-
-        if (direct != null) {
-            float convertedAmount = convertCurrency(direct, amount);
-            return toResponse(direct, amount, convertedAmount);
-        }
-
-        ExchangeRate baseToUsd = tryGetRate(baseCurrencyCode, "USD");
-        ExchangeRate usdToTarget = tryGetRate("USD", targetCurrencyCode);
-
-        if (baseToUsd != null && usdToTarget != null) {
-            float convertedAmount = convertCurrency(baseToUsd, amount);
-            convertedAmount = convertCurrency(usdToTarget, convertedAmount);
-            return toResponse(baseToUsd, amount, convertedAmount);
-        }
-
-        throw new NotFoundException("Exchange rate not found for " + baseCurrencyCode + " to " + targetCurrencyCode);
+        return new ExchangeResponse(
+                toResponse(rate.getBaseCurrency()),
+                toResponse(rate.getTargetCurrency()),
+                rate.getRate(),
+                amount,
+                rate.getRate() * amount
+        );
     }
 
-    private float convertCurrency(ExchangeRate exchangeRate, float amount) {
-        return exchangeRate.getRate() * amount;
+    private Optional<ExchangeRate> findRate(String from, String to) {
+        ExchangeRate direct = tryGetRate(from, to);
+        if (direct != null) {
+            return Optional.of(direct);
+        }
+
+        ExchangeRate reverse = tryGetRate(to, from);
+        if (reverse != null) {
+            return Optional.of(invert(reverse));
+        }
+
+        return Optional.empty();
+    }
+
+    private Optional<ExchangeRate> findRateViaUsd(String from, String to) {
+        Optional<ExchangeRate> usdToFrom = findRate("USD", from);
+        Optional<ExchangeRate> usdToTo = findRate("USD", to);
+
+        if (usdToFrom.isEmpty() || usdToTo.isEmpty()) {
+            return Optional.empty();
+        }
+
+        ExchangeRate a = usdToFrom.get();
+        ExchangeRate b = usdToTo.get();
+
+        return Optional.of(new ExchangeRate(
+                0,
+                a.getTargetCurrency(),
+                b.getTargetCurrency(),
+                b.getRate() / a.getRate()
+        ));
+    }
+
+    private ExchangeRate invert(ExchangeRate rate) {
+        return new ExchangeRate(
+                rate.getId(),
+                rate.getTargetCurrency(),
+                rate.getBaseCurrency(),
+                1.0f / rate.getRate()
+        );
     }
 
     private ExchangeRate tryGetRate(String baseCode, String targetCode) {
         try {
             return exchangeRatesDao.readByCurrencyCodes(baseCode, targetCode);
-        }
-        catch (NotFoundException e) {
+        } catch (NotFoundException e) {
             return null;
         }
     }
