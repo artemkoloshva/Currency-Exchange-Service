@@ -4,6 +4,7 @@ import dao.ExchangeRatesDao;
 import dto.*;
 import entity.Currency;
 import entity.ExchangeRate;
+import exception.BadRequestException;
 import exception.NotFoundException;
 
 import java.util.List;
@@ -33,6 +34,16 @@ public class DefaultExchangeService implements ExchangeService {
 
     @Override
     public ExchangeRateResponse addExchangeRate(ExchangeRateRequest request) {
+        if (request.getBaseCurrencyCode().equals(request.getTargetCurrencyCode())) {
+            throw new BadRequestException(
+                    "Base and target currencies must be different, but both are: " + request.getBaseCurrencyCode());
+        }
+
+        if (request.getRate() <= 0) {
+            throw new BadRequestException(
+                    "Exchange rate must be greater than 0, but got: " + request.getRate());
+        }
+
         ExchangeRate addedExchangeRate = exchangeRatesDao.createByCodes(
                 request.getBaseCurrencyCode().toUpperCase(),
                 request.getTargetCurrencyCode().toUpperCase(),
@@ -44,6 +55,11 @@ public class DefaultExchangeService implements ExchangeService {
 
     @Override
     public ExchangeRateResponse updateExchangeRate(ExchangeRateRequest request) {
+        if (request.getRate() <= 0) {
+            throw new BadRequestException(
+                    "ExchangeRate validation failed: rate must be greater than 0, but got " + request.getRate());
+        }
+
         ExchangeRate updatedExchangeRate = exchangeRatesDao.updateByCodes(
                 request.getBaseCurrencyCode(),
                 request.getTargetCurrencyCode(),
