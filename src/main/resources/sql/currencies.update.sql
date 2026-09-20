@@ -1,3 +1,3 @@
 UPDATE currencies
-SET name = ?, symbol = ?
+SET name = ?, sign = ?
 WHERE code = ?;

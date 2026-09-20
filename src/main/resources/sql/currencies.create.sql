@@ -1,2 +1,2 @@
-INSERT INTO currencies (code, name, symbol)
+INSERT INTO currencies (code, name, sign)
 VALUES (?, ?, ?);
