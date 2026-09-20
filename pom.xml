@@ -37,7 +37,7 @@
     </dependencies>
 
     <build>
-        <finalName>CurrencyExchangeService</finalName>
+        <finalName>currency-exchange-service</finalName>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -45,18 +45,6 @@
                 <version>3.4.0</version>
                 <configuration>
                     <failOnMissingWebXml>false</failOnMissingWebXml>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.tomcat.maven</groupId>
-                <artifactId>tomcat7-maven-plugin</artifactId>
-                <version>2.2</version>
-                <configuration>
-                    <url>http://192.168.0.113:8080/manager/text</url>
-                    <username>ak</username>
-                    <password>7355608c4</password>
-                    <path>/currency-exchange-service</path>
-                    <update>true</update>
                 </configuration>
             </plugin>
             <plugin>
