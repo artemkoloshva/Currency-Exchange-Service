@@ -21,4 +21,4 @@ INSERT INTO exchange_rates (base_currency_code, target_currency_code, rate) VALU
 ('USD', 'CNY', 6.45),
 ('USD', 'SEK', 8.65),
 ('USD', 'NZD', 1.42),
-('USD', 'RUB', 75.0);
+('RUB', 'USD', 75.0);
