@@ -14,12 +14,12 @@ import java.util.List;
 import java.util.Properties;
 
 public class JdbcExchangeRatesDao implements ExchangeRatesDao {
-    private static final String SQL_CREATE = SqlLoader.loadSqlQuery("exchange-rate.create.sql");
-    private static final String SQL_READ_BY_CURRENCY_CODES = SqlLoader.loadSqlQuery("exchange-rate.read-by-currency-codes.sql");
-    private static final String SQL_READ = SqlLoader.loadSqlQuery("exchange-rate.read.sql");
-    private static final String SQL_READ_ALL = SqlLoader.loadSqlQuery("exchange-rate.read-all.sql");
-    private static final String SQL_UPDATE = SqlLoader.loadSqlQuery("exchange-rate.update.sql");
-    private static final String SQL_DELETE = SqlLoader.loadSqlQuery("exchange-rate.delete.sql");
+    private static final String SQL_CREATE = SqlLoader.loadSqlQuery("exchange-rates.create.sql");
+    private static final String SQL_READ_BY_CURRENCY_CODES = SqlLoader.loadSqlQuery("exchange-rates.read-by-currency-codes.sql");
+    private static final String SQL_READ = SqlLoader.loadSqlQuery("exchange-rates.read.sql");
+    private static final String SQL_READ_ALL = SqlLoader.loadSqlQuery("exchange-rates.read-all.sql");
+    private static final String SQL_UPDATE = SqlLoader.loadSqlQuery("exchange-rates.update.sql");
+    private static final String SQL_DELETE = SqlLoader.loadSqlQuery("exchange-rates.delete.sql");
 
     private final Connection connection;
 
@@ -166,7 +166,11 @@ public class JdbcExchangeRatesDao implements ExchangeRatesDao {
             statement.setFloat(1, rate);
             statement.setString(2, baseCurrencyCode);
             statement.setString(3, targetCurrencyCode);
-            statement.executeUpdate();
+
+            if (statement.executeUpdate() == 0) {
+                throw new NotFoundException(
+                        "Exchange rate for " + baseCurrencyCode + "/" + targetCurrencyCode + " not found");
+            }
 
             return readByCurrencyCodes(baseCurrencyCode, targetCurrencyCode);
         } catch (SQLException e) {

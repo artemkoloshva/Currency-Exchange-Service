@@ -13,12 +13,12 @@ import java.util.List;
 import java.util.Properties;
 
 public class JdbcCurrenciesDao implements CurrenciesDao {
-    private static final String SQL_CREATE = SqlLoader.loadSqlQuery("currency.create.sql");
-    private static final String SQL_READ_BY_CODE = SqlLoader.loadSqlQuery("currency.read-by-code.sql");
-    private static final String SQL_READ = SqlLoader.loadSqlQuery("currency.read.sql");
-    private static final String SQL_READ_ALL = SqlLoader.loadSqlQuery("currency.read-all.sql");
-    private static final String SQL_UPDATE = SqlLoader.loadSqlQuery("currency.update.sql");
-    private static final String SQL_DELETE = SqlLoader.loadSqlQuery("currency.delete.sql");
+    private static final String SQL_CREATE = SqlLoader.loadSqlQuery("currencies.create.sql");
+    private static final String SQL_READ_BY_CODE = SqlLoader.loadSqlQuery("currencies.read-by-code.sql");
+    private static final String SQL_READ = SqlLoader.loadSqlQuery("currencies.read.sql");
+    private static final String SQL_READ_ALL = SqlLoader.loadSqlQuery("currencies.read-all.sql");
+    private static final String SQL_UPDATE = SqlLoader.loadSqlQuery("currencies.update.sql");
+    private static final String SQL_DELETE = SqlLoader.loadSqlQuery("currencies.delete.sql");
 
     private final Connection connection;
 
@@ -101,7 +101,11 @@ public class JdbcCurrenciesDao implements CurrenciesDao {
             statement.setString(1, entity.getName());
             statement.setString(2, entity.getSign());
             statement.setString(3, entity.getCode());
-            statement.executeUpdate();
+
+            if (statement.executeUpdate() == 0) {
+                throw new NotFoundException(
+                        "Currency with code " + entity.getCode() + " not found");
+            }
 
             return readByCode(entity.getCode());
         } catch (SQLException e) {
