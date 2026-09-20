@@ -1,21 +1,23 @@
 package util;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+
 public class SqlLoader {
-    private static final String SQL_FILE_PATH = "src/main/resources/sql/";
+    private static final String SQL_DIR = "sql/";
 
     public static String loadSqlQuery(String fileName) {
-        StringBuilder sqlQuery = new StringBuilder();
+        String path = SQL_DIR + fileName;
 
-        try (java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.FileReader(SQL_FILE_PATH + fileName))) {
-            String line;
-
-            while ((line = reader.readLine()) != null) {
-                sqlQuery.append(line).append("\n");
+        try (InputStream in = SqlLoader.class.getClassLoader().getResourceAsStream(path)) {
+            if (in == null) {
+                throw new RuntimeException("SQL file not found in classpath: " + path);
             }
-        } catch (java.io.IOException e) {
+
+            return new String(in.readAllBytes(), StandardCharsets.UTF_8);
+        } catch (IOException e) {
             throw new RuntimeException("Error loading SQL query from file: " + fileName, e);
         }
-
-        return sqlQuery.toString();
     }
 }
