@@ -65,7 +65,7 @@ public class ExchangeRateServlet extends AbstractJsonServlet {
                 return;
             }
 
-            String rate = request.getParameter("rate");
+            String rate = getFormParameter(request, "rate");
 
             if (isBlank(rate)) {
                 writeError(response, HttpServletResponse.SC_BAD_REQUEST,
