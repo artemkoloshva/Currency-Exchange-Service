@@ -35,9 +35,12 @@ public class DefaultExchangeService implements ExchangeService {
 
     @Override
     public ExchangeRateResponse addExchangeRate(ExchangeRateRequest request) {
-        if (request.getBaseCurrencyCode().equals(request.getTargetCurrencyCode())) {
+        String baseCurrencyCode = request.getBaseCurrencyCode().toUpperCase();
+        String targetCurrencyCode = request.getTargetCurrencyCode().toUpperCase();
+
+        if (baseCurrencyCode.equals(targetCurrencyCode)) {
             throw new BadRequestException(
-                    "Base and target currencies must be different, but both are: " + request.getBaseCurrencyCode());
+                    "Base and target currencies must be different, but both are: " + baseCurrencyCode);
         }
 
         if (request.getRate() <= 0) {
@@ -45,9 +48,14 @@ public class DefaultExchangeService implements ExchangeService {
                     "Exchange rate must be greater than 0, but got: " + request.getRate());
         }
 
+        if (hasMirrorExchangeRate(baseCurrencyCode, targetCurrencyCode)) {
+            throw new BadRequestException(
+                    "Mirror exchange rate already exists: " + targetCurrencyCode + "/" + baseCurrencyCode);
+        }
+
         ExchangeRate addedExchangeRate = exchangeRatesDao.createByCodes(
-                request.getBaseCurrencyCode().toUpperCase(),
-                request.getTargetCurrencyCode().toUpperCase(),
+                baseCurrencyCode,
+                targetCurrencyCode,
                 request.getRate()
         );
 
@@ -87,6 +95,15 @@ public class DefaultExchangeService implements ExchangeService {
                 amount,
                 rate.getRate() * amount
         );
+    }
+
+    private boolean hasMirrorExchangeRate(String baseCurrencyCode, String targetCurrencyCode) {
+        try {
+            exchangeRatesDao.readByCurrencyCodes(targetCurrencyCode, baseCurrencyCode);
+            return true;
+        } catch (NotFoundException e) {
+            return false;
+        }
     }
 
     private Optional<ExchangeRate> findRate(String from, String to) {
