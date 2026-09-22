@@ -86,6 +86,7 @@ public class JdbcExchangeRatesDao implements ExchangeRatesDao {
             while (resultSet.next()) {
                 exchangeRates.add(mapExchangeRate(resultSet));
             }
+
             return exchangeRates;
         } catch (SQLException e) {
             throw new InternalServerErrorException(
@@ -139,7 +140,6 @@ public class JdbcExchangeRatesDao implements ExchangeRatesDao {
         } catch (SQLException e) {
             throw new InternalServerErrorException(
                     "Error reading exchange rate for " + baseCurrencyCode + "/" + targetCurrencyCode);
-
         }
     }
 
