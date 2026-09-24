@@ -1,19 +1,19 @@
 package entity;
 
 public class Currency {
-    private final int id;
+    private final Integer id;
     private final String code;
     private final String name;
     private final String sign;
 
-    public Currency(int id, String code, String name, String sign) {
+    public Currency(Integer id, String code, String name, String sign) {
         this.id = id;
         this.code = code;
         this.name = name;
         this.sign = sign;
     }
 
-    public int getId() {
+    public Integer getId() {
         return id;
     }
 
@@ -22,10 +22,6 @@ public class Currency {
     }
 
     public String getName() {
-        return name;
-    }
-
-    public String getFullName() {
         return name;
     }
 
