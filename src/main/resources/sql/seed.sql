@@ -11,14 +11,14 @@ INSERT INTO currencies (code, name, sign) VALUES
 ('SEK', 'Swedish Krona', 'kr'),
 ('NZD', 'New Zealand Dollar', '$');
 
-INSERT INTO exchange_rates (base_currency_code, target_currency_code, rate) VALUES
-('USD', 'EUR', 0.85),
-('USD', 'GBP', 0.75),
-('USD', 'JPY', 110.0),
-('USD', 'AUD', 1.35),
-('USD', 'CAD', 1.25),
-('USD', 'CHF', 0.92),
-('USD', 'CNY', 6.45),
-('USD', 'SEK', 8.65),
-('USD', 'NZD', 1.42),
-('RUB', 'USD', 75.0);
+INSERT INTO exchange_rates (base_currency_id, target_currency_id, rate) VALUES
+(1, 3, 0.85),
+(1, 4, 0.75),
+(1, 5, 110.0),
+(1, 6, 1.35),
+(1, 7, 1.25),
+(1, 8, 0.92),
+(1, 9, 6.45),
+(1, 10, 8.65),
+(1, 11, 1.42),
+(1, 2, 0.014);
