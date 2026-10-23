@@ -6,8 +6,7 @@ import com.zaxxer.hikari.HikariDataSource;
 import java.util.Properties;
 
 public final class DataSourceProvider {
-
-    private static final String CONFIG_FILE = "db.properties";
+    private static final String CONFIG_FILE = "ds.properties";
     private static final HikariDataSource DATA_SOURCE;
 
     static {
