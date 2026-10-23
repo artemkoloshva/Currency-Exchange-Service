@@ -6,7 +6,6 @@ import exception.DatabaseException;
 import exception.NotFoundException;
 import mapper.CurrencyResultSetMapper;
 import mapper.ResultSetMapper;
-import util.DataSourceProvider;
 import util.SqlLoader;
 
 import javax.sql.DataSource;
@@ -25,8 +24,8 @@ public class JdbcCurrencyDao implements CurrencyDao {
 
     private final DataSource dataSource;
 
-    public JdbcCurrencyDao() {
-        this.dataSource = DataSourceProvider.getDataSource();
+    public JdbcCurrencyDao(DataSource dataSource) {
+        this.dataSource = dataSource;
     }
 
     @Override

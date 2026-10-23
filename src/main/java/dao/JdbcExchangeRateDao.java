@@ -6,7 +6,6 @@ import exception.DatabaseException;
 import exception.NotFoundException;
 import mapper.ExchangeRateResultSetMapper;
 import mapper.ResultSetMapper;
-import util.DataSourceProvider;
 import util.SqlLoader;
 
 import javax.sql.DataSource;
@@ -27,8 +26,8 @@ public class JdbcExchangeRateDao implements ExchangeRateDao {
 
     private final DataSource dataSource;
 
-    public JdbcExchangeRateDao() {
-        this.dataSource = DataSourceProvider.getDataSource();
+    public JdbcExchangeRateDao(DataSource dataSource) {
+        this.dataSource = dataSource;
     }
 
     @Override
