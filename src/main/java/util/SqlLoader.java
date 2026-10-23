@@ -19,6 +19,7 @@ public final class SqlLoader {
                 throw new DatabaseException(
                         "SQL file not found in classpath: " + path);
             }
+
             return new String(in.readAllBytes(), StandardCharsets.UTF_8);
         } catch (IOException e) {
             throw new DatabaseException(
