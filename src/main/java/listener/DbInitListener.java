@@ -3,55 +3,31 @@ package listener;
 import jakarta.servlet.ServletContextEvent;
 import jakarta.servlet.ServletContextListener;
 import jakarta.servlet.annotation.WebListener;
-
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
 import java.util.Properties;
 import java.util.stream.Collectors;
-
-import jakarta.servlet.ServletContextEvent;
-import jakarta.servlet.ServletContextListener;
-import jakarta.servlet.annotation.WebListener;
-
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
-import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.Properties;
-import java.util.stream.Collectors;
 
 @WebListener
 public class DbInitListener implements ServletContextListener {
-
     @Override
     public void contextInitialized(ServletContextEvent sce) {
         try {
             Class.forName("org.sqlite.JDBC");
 
             Properties properties = new Properties();
-            try (InputStream in = getClass().getClassLoader().getResourceAsStream("db.properties")) {
+            try (InputStream in = getClass().getClassLoader().getResourceAsStream("ds.properties")) {
                 if (in == null) {
-                    throw new IllegalStateException("db.properties not found");
+                    throw new IllegalStateException("ds.properties not found");
                 }
                 properties.load(in);
             }
 
             String databaseUrl = properties.getProperty("url");
             if (databaseUrl == null || databaseUrl.isBlank()) {
-                throw new IllegalStateException("database URL is missing in db.properties");
+                throw new IllegalStateException("database URL is missing in ds.properties");
             }
 
             String schemaSql = readResourceSql("sql/schema.sql");
