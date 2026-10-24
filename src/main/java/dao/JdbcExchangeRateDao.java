@@ -52,7 +52,7 @@ public class JdbcExchangeRateDao implements ExchangeRateDao {
 
     public ExchangeRate createByCodes(String baseCurrencyCode, String targetCurrencyCode, BigDecimal rate) {
         try(Connection connection = dataSource.getConnection();
-            PreparedStatement statement = connection.prepareStatement(SQL_CREATE_BY_CURRENCY_CODES)) {
+                PreparedStatement statement = connection.prepareStatement(SQL_CREATE_BY_CURRENCY_CODES)) {
             statement.setString(1, baseCurrencyCode);
             statement.setString(2, targetCurrencyCode);
             statement.setBigDecimal(3, rate);
@@ -110,7 +110,7 @@ public class JdbcExchangeRateDao implements ExchangeRateDao {
     @Override
     public ExchangeRate readByCurrencyCodes(String baseCurrencyCode, String targetCurrencyCode) {
         try(Connection connection = dataSource.getConnection();
-            PreparedStatement statement = connection.prepareStatement(SQL_READ_BY_CURRENCY_CODES)) {
+                PreparedStatement statement = connection.prepareStatement(SQL_READ_BY_CURRENCY_CODES)) {
             statement.setString(1, baseCurrencyCode);
             statement.setString(2, targetCurrencyCode);
             ResultSet resultSet = statement.executeQuery();
@@ -144,7 +144,7 @@ public class JdbcExchangeRateDao implements ExchangeRateDao {
 
     public ExchangeRate updateByCodes(String baseCurrencyCode, String targetCurrencyCode, BigDecimal rate) {
         try(Connection connection = dataSource.getConnection();
-            PreparedStatement statement = connection.prepareStatement(SQL_UPDATE)) {
+                PreparedStatement statement = connection.prepareStatement(SQL_UPDATE)) {
             statement.setBigDecimal(1, rate);
             statement.setString(2, baseCurrencyCode);
             statement.setString(3, targetCurrencyCode);
