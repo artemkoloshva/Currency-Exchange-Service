@@ -3,7 +3,6 @@ package servlet;
 import dto.ExchangeRateRequest;
 import dto.ExchangeRateResponse;
 import jakarta.servlet.ServletException;
-import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import parser.BigDecimalParser;
@@ -13,7 +12,6 @@ import validator.ExchangeRateValidator;
 import java.io.IOException;
 import java.math.BigDecimal;
 
-@WebServlet("/exchangeRate/*")
 public class ExchangeRateServlet extends AbstractJsonServlet {
     private final ExchangeRateService exchangeRateService;
     private final ExchangeRateValidator exchangeRateValidator;

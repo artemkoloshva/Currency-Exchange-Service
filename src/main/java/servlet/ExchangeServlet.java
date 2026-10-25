@@ -2,8 +2,6 @@ package servlet;
 
 import dto.ExchangeRequest;
 import dto.ExchangeResponse;
-import exception.NotFoundException;
-import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import parser.BigDecimalParser;
@@ -14,7 +12,6 @@ import validator.ExchangeRateValidator;
 import java.io.IOException;
 import java.math.BigDecimal;
 
-@WebServlet("/exchange")
 public class ExchangeServlet extends AbstractJsonServlet {
     private final ExchangeService exchangeService;
     private final CurrencyValidator currencyValidator;

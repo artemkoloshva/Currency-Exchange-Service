@@ -2,7 +2,6 @@ package servlet;
 
 import dto.CurrencyRequest;
 import dto.CurrencyResponse;
-import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import service.CurrencyService;
@@ -11,7 +10,6 @@ import validator.CurrencyValidator;
 import java.io.IOException;
 import java.util.List;
 
-@WebServlet("/currencies")
 public class CurrenciesServlet extends AbstractJsonServlet {
     private final CurrencyService currencyService;
     private final CurrencyValidator currencyValidator;

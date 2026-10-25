@@ -1,17 +1,13 @@
 package servlet;
 
 import dto.CurrencyResponse;
-import exception.NotFoundException;
-import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import service.CurrencyService;
 import validator.CurrencyValidator;
-import validator.RequestValidator;
 
 import java.io.IOException;
 
-@WebServlet("/currency/*")
 public class CurrencyServlet extends AbstractJsonServlet {
     private final CurrencyService currencyService;
     private final CurrencyValidator currencyValidator;
