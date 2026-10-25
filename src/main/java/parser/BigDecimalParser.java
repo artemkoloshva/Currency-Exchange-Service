@@ -9,7 +9,7 @@ public class BigDecimalParser {
         try {
             return new BigDecimal(value.trim().replace(',', '.'));
         } catch (NumberFormatException e) {
-            throw new NumberFormatException("The value must be a valid number");
+            throw new ValidationException("The value must be a valid number");
         }
     }
 }
