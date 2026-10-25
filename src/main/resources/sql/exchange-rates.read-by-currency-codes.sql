@@ -6,4 +6,4 @@ SELECT
 FROM exchange_rates er
     JOIN currencies bc ON er.base_currency_id = bc.id
     JOIN currencies tc ON er.target_currency_id = tc.id
-WHERE er.base_currency_code = ? AND er.target_currency_code = ?;
+WHERE bc.code = ? AND tc.code = ?;
