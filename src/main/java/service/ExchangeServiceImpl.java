@@ -7,6 +7,7 @@ import exception.NotFoundException;
 import mapper.CurrencyMapper;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.Optional;
 
 public class ExchangeServiceImpl implements ExchangeService {
@@ -33,7 +34,7 @@ public class ExchangeServiceImpl implements ExchangeService {
                 currencyMapper.toResponse(exchangeRate.getTargetCurrency()),
                 exchangeRate.getRate(),
                 amount,
-                exchangeRate.getRate().multiply(amount)
+                exchangeRate.getRate().multiply(amount).setScale(2, RoundingMode.HALF_UP)
         );
     }
 
@@ -75,7 +76,7 @@ public class ExchangeServiceImpl implements ExchangeService {
                 0,
                 a.getTargetCurrency(),
                 b.getTargetCurrency(),
-                b.getRate().divide(a.getRate())
+                b.getRate().divide(a.getRate(), 6, RoundingMode.HALF_UP)
         ));
     }
 
@@ -84,7 +85,7 @@ public class ExchangeServiceImpl implements ExchangeService {
                 rate.getId(),
                 rate.getTargetCurrency(),
                 rate.getBaseCurrency(),
-                BigDecimal.ONE.divide(rate.getRate())
+                BigDecimal.ONE.divide(rate.getRate(), 6, RoundingMode.HALF_UP)
         );
     }
 
