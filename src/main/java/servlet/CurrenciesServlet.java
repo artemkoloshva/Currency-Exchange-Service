@@ -1,55 +1,46 @@
 package servlet;
 
-import dao.JdbcCurrenciesDao;
 import dto.CurrencyRequest;
 import dto.CurrencyResponse;
-import exception.BadRequestException;
-import exception.ConflictException;
-import exception.InternalServerErrorException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import service.CurrencyService;
-import service.DefaultCurrencyService;
+import validator.CurrencyValidator;
 
 import java.io.IOException;
 import java.util.List;
 
 @WebServlet("/currencies")
 public class CurrenciesServlet extends AbstractJsonServlet {
-    private final CurrencyService currencyService = new DefaultCurrencyService(new JdbcCurrenciesDao());
+    private final CurrencyService currencyService;
+    private final CurrencyValidator currencyValidator;
+
+    public CurrenciesServlet(CurrencyService currencyService, CurrencyValidator currencyValidator) {
+        this.currencyService = currencyService;
+        this.currencyValidator = currencyValidator;
+    }
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        try {
-            List<CurrencyResponse> currencyResponses = currencyService.getAllCurrencies();
-            writeJson(response, HttpServletResponse.SC_OK, currencyResponses);
-        } catch (InternalServerErrorException e) {
-            writeError(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage());
-        }
+        List<CurrencyResponse> currencyResponses = currencyService.getAllCurrencies();
+        writeJson(response, HttpServletResponse.SC_OK, currencyResponses);
     }
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        try {
-            String name = request.getParameter("name");
-            String code = request.getParameter("code");
-            String sign = request.getParameter("sign");
+        currencyValidator.validate(request);
 
-            if (isBlank(name) || isBlank(code) || isBlank(sign)) {
-                writeError(response, HttpServletResponse.SC_BAD_REQUEST,
-                        "The required form field is missing");
-                return;
-            }
+        String name = request.getParameter("name");
+        String code = request.getParameter("code");
+        String sign = request.getParameter("sign");
 
-            CurrencyRequest currencyRequest = new CurrencyRequest(code.trim().toUpperCase(), name.trim(), sign.trim());
-            CurrencyResponse currencyResponse = currencyService.addCurrency(currencyRequest);
-
-            writeJson(response, HttpServletResponse.SC_CREATED, currencyResponse);
-        } catch (ConflictException e) {
-            writeError(response, HttpServletResponse.SC_CONFLICT, e.getMessage());
-        } catch (InternalServerErrorException e) {
-            writeError(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage());
-        }
+        CurrencyRequest currencyRequest = new CurrencyRequest(
+                name,
+                code.toUpperCase(),
+                sign
+        );
+        CurrencyResponse currencyResponse = currencyService.addCurrency(currencyRequest);
+        writeJson(response, HttpServletResponse.SC_CREATED, currencyResponse);
     }
 }

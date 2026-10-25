@@ -1,99 +1,48 @@
 package servlet;
 
-import dao.JdbcExchangeRatesDao;
 import dto.ExchangeRateRequest;
 import dto.ExchangeRateResponse;
-import exception.BadRequestException;
-import exception.InternalServerErrorException;
-import exception.NotFoundException;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import service.DefaultExchangeService;
-import service.ExchangeService;
+import parser.BigDecimalParser;
+import service.ExchangeRateService;
+import validator.ExchangeRateValidator;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 
 @WebServlet("/exchangeRate/*")
 public class ExchangeRateServlet extends AbstractJsonServlet {
-    private final ExchangeService exchangeRateService = new DefaultExchangeService(new JdbcExchangeRatesDao());
+    private final ExchangeRateService exchangeRateService;
+    private final ExchangeRateValidator exchangeRateValidator;
+    private final BigDecimalParser bigDecimalParser;
+
+    public ExchangeRateServlet(ExchangeRateService exchangeRateService, ExchangeRateValidator exchangeRateValidator, BigDecimalParser bigDecimalParser) {
+        this.exchangeRateService = exchangeRateService;
+        this.exchangeRateValidator = exchangeRateValidator;
+        this.bigDecimalParser = bigDecimalParser;
+    }
 
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        try {
-            String pathInfo = request.getPathInfo();
-
-            if (isBlank(pathInfo) || pathInfo.equals("/")) {
-                writeError(response, HttpServletResponse.SC_BAD_REQUEST,
-                        "The currency codes of the pair are missing in the address");
-                return;
-            }
-
-            String code = pathInfo.substring(1).toUpperCase();
-
-            if (code.length() != 6) {
-                writeError(response, HttpServletResponse.SC_BAD_REQUEST,
-                        "Incorrect exchange rate");
-                return;
-            }
-
-            ExchangeRateResponse exchangeRateResponse = exchangeRateService.getExchangeRateByCodes(
-                    code.substring(0, 3), code.substring(3));
-            writeJson(response, HttpServletResponse.SC_OK, exchangeRateResponse);
-        } catch (NotFoundException e) {
-            writeError(response, HttpServletResponse.SC_NOT_FOUND, e.getMessage());
-        } catch (InternalServerErrorException e) {
-            writeError(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage());
-        }
+        String pair = extractPair(request);
+        exchangeRateValidator.validatePair(pair);
+        ExchangeRateResponse result = exchangeRateService.getExchangeRateByCodes(pair.substring(0, 3), pair.substring(3));
+        writeJson(response, HttpServletResponse.SC_OK, result);
     }
 
     protected void doPatch(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        try {
-            String pathInfo = request.getPathInfo();
+        String pair = extractPair(request);
 
-            if (isBlank(pathInfo) || pathInfo.equals("/")) {
-                writeError(response, HttpServletResponse.SC_BAD_REQUEST,
-                        "The currency codes of the pair are missing in the address");
-                return;
-            }
+        exchangeRateValidator.validatePair(pair);
+        exchangeRateValidator.validateRate(getFormParameter(request, "rate"));
 
-            String code = pathInfo.substring(1).toUpperCase();
+        BigDecimal rate = bigDecimalParser.parse(getFormParameter(request, "rate"));
 
-            if (code.length() != 6) {
-                writeError(response, HttpServletResponse.SC_BAD_REQUEST,
-                        "Incorrect exchange rate");
-                return;
-            }
-
-            String rate = getFormParameter(request, "rate");
-
-            if (isBlank(rate)) {
-                writeError(response, HttpServletResponse.SC_BAD_REQUEST,
-                        "The required form field is missing");
-                return;
-            }
-
-            float floatRate;
-
-            try {
-                floatRate = Float.parseFloat(rate.trim());
-            } catch (NumberFormatException e) {
-                writeError(response, HttpServletResponse.SC_BAD_REQUEST,
-                        "Incorrectly entered rate");
-                return;
-            }
-
-            ExchangeRateRequest exchangeRateRequest = new ExchangeRateRequest(code.substring(0, 3), code.substring(3), floatRate);
-            ExchangeRateResponse exchangeRateResponse = exchangeRateService.updateExchangeRate(exchangeRateRequest);
-
-            writeJson(response, HttpServletResponse.SC_OK, exchangeRateResponse);
-        } catch (BadRequestException e) {
-            writeError(response, HttpServletResponse.SC_BAD_REQUEST, e.getMessage());
-        } catch (NotFoundException e) {
-            writeError(response, HttpServletResponse.SC_NOT_FOUND, e.getMessage());
-        } catch (InternalServerErrorException e) {
-            writeError(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage());
-        }
+        ExchangeRateRequest dto = new ExchangeRateRequest(pair.substring(0, 3), pair.substring(3), rate);
+        ExchangeRateResponse result = exchangeRateService.updateExchangeRate(dto);
+        writeJson(response, HttpServletResponse.SC_OK, result);
     }
 
     @Override
@@ -105,5 +54,14 @@ public class ExchangeRateServlet extends AbstractJsonServlet {
         } else {
             super.service(request, response);
         }
+    }
+
+    private String extractPair(HttpServletRequest request) {
+        String pathInfo = request.getPathInfo();
+        String pair = (pathInfo == null || pathInfo.length() <= 1)
+                ? null
+                : pathInfo.substring(1).toUpperCase();
+        exchangeRateValidator.validatePair(pair);
+        return pair;
     }
 }

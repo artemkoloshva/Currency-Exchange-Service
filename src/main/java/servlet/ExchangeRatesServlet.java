@@ -1,68 +1,44 @@
 package servlet;
 
-import dao.JdbcExchangeRatesDao;
 import dto.ExchangeRateRequest;
 import dto.ExchangeRateResponse;
-import exception.BadRequestException;
-import exception.ConflictException;
-import exception.InternalServerErrorException;
-import exception.NotFoundException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import service.DefaultExchangeService;
-import service.ExchangeService;
+import parser.BigDecimalParser;
+import service.ExchangeRateService;
+import validator.ExchangeRateValidator;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.util.List;
 
 @WebServlet("/exchangeRates")
 public class ExchangeRatesServlet extends AbstractJsonServlet {
-    private final ExchangeService exchangeRateService = new DefaultExchangeService(new JdbcExchangeRatesDao());
+    private final ExchangeRateService exchangeRateService;
+    private final ExchangeRateValidator exchangeRateValidator;
+    private final BigDecimalParser bigDecimalParser;
+
+    public ExchangeRatesServlet(ExchangeRateService service, ExchangeRateValidator exchangeRateValidator, BigDecimalParser bigDecimalParser) {
+        this.exchangeRateService = service;
+        this.exchangeRateValidator = exchangeRateValidator;
+        this.bigDecimalParser = bigDecimalParser;
+    }
 
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        try {
-            List<ExchangeRateResponse> exchangeRateResponses = exchangeRateService.getAllExchangeRates();
-            writeJson(response, HttpServletResponse.SC_OK, exchangeRateResponses);
-        } catch (InternalServerErrorException e) {
-            writeError(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage());
-        }
+        List<ExchangeRateResponse> exchangeRateResponses = exchangeRateService.getAllExchangeRates();
+        writeJson(response, HttpServletResponse.SC_OK, exchangeRateResponses);
     }
 
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        try {
-            String baseCurrencyCode = request.getParameter("baseCurrencyCode").toUpperCase();
-            String targetCurrencyCode = request.getParameter("targetCurrencyCode").toUpperCase();
-            String rate = request.getParameter("rate");
+        exchangeRateValidator.validate(request);
 
-            if (isBlank(baseCurrencyCode) || isBlank(targetCurrencyCode) || isBlank(rate)) {
-                writeError(response, HttpServletResponse.SC_BAD_REQUEST,
-                        "The required form field is missing");
-                return;
-            }
+        String baseCurrencyCode = request.getParameter("baseCurrencyCode").toUpperCase();
+        String targetCurrencyCode = request.getParameter("targetCurrencyCode").toUpperCase();
+        BigDecimal rate = bigDecimalParser.parse(request.getParameter("rate"));
 
-            float floatRate;
-
-            try {
-                floatRate = Float.parseFloat(rate.trim());
-            } catch (NumberFormatException e) {
-                writeError(response, HttpServletResponse.SC_BAD_REQUEST,
-                        "Incorrectly entered rate");
-                return;
-            }
-
-            ExchangeRateRequest exchangeRateRequest = new ExchangeRateRequest(baseCurrencyCode, targetCurrencyCode, floatRate);
-            ExchangeRateResponse exchangeRateResponse = exchangeRateService.addExchangeRate(exchangeRateRequest);
-
-            writeJson(response, HttpServletResponse.SC_CREATED, exchangeRateResponse);
-        } catch (BadRequestException e) {
-            writeError(response, HttpServletResponse.SC_BAD_REQUEST, e.getMessage());
-        } catch (ConflictException e) {
-            writeError(response, HttpServletResponse.SC_CONFLICT, e.getMessage());
-        } catch (NotFoundException e) {
-            writeError(response, HttpServletResponse.SC_NOT_FOUND, e.getMessage());
-        } catch (InternalServerErrorException e) {
-            writeError(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage());
-        }
+        ExchangeRateRequest exchangeRateRequest = new ExchangeRateRequest(baseCurrencyCode, targetCurrencyCode, rate);
+        ExchangeRateResponse exchangeRateResponse = exchangeRateService.addExchangeRate(exchangeRateRequest);
+        writeJson(response, HttpServletResponse.SC_CREATED, exchangeRateResponse);
     }
 }
