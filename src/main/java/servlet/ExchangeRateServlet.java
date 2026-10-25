@@ -32,11 +32,11 @@ public class ExchangeRateServlet extends AbstractJsonServlet {
 
     protected void doPatch(HttpServletRequest request, HttpServletResponse response) throws IOException {
         String pair = extractPair(request);
-
         exchangeRateValidator.validatePair(pair);
-        exchangeRateValidator.validateRate(getFormParameter(request, "rate"));
 
-        BigDecimal rate = bigDecimalParser.parse(getFormParameter(request, "rate"));
+        String rateValue = getFormParameter(request, "rate");
+        exchangeRateValidator.validateRate(rateValue);
+        BigDecimal rate = bigDecimalParser.parse(rateValue);
 
         ExchangeRateRequest dto = new ExchangeRateRequest(pair.substring(0, 3), pair.substring(3), rate);
         ExchangeRateResponse result = exchangeRateService.updateExchangeRate(dto);
