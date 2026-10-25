@@ -53,9 +53,5 @@ public abstract class AbstractJsonServlet extends HttpServlet {
         return null;
     }
 
-    protected boolean isBlank(String value) {
-        return value == null || value.isBlank();
-    }
-
     protected record ErrorResponse(String message) {}
 }
