@@ -90,7 +90,7 @@ src/main/
 
 ### Как это работает
 
-1. **Старт.** `DbInitListener` (`@WebListener`) читает `db.properties`, открывает соединение с SQLite, в одной транзакции выполняет `schema.sql` (`CREATE TABLE IF NOT EXISTS`), а если таблица `currencies` пуста — ещё и `seed.sql`. Повторные запуски данные не затирают.
+1. **Старт.** `DbInitListener` (`@WebListener`) читает `data-source.properties`, открывает соединение с SQLite, в одной транзакции выполняет `schema.sql` (`CREATE TABLE IF NOT EXISTS`), а если таблица `currencies` пуста — ещё и `seed.sql`. Повторные запуски данные не затирают.
 2. **Запрос.** Сервлет (`@WebServlet`) достаёт параметры из адреса/формы, проводит первичные проверки и вызывает сервис.
 3. **Сервис** содержит бизнес-логику (в том числе расчёт конвертации) и переводит сущности в DTO.
 4. **DAO** выполняет SQL из файлов в `resources/sql`, подгружаемых через `SqlLoader`, и мапит `ResultSet` в сущности.
@@ -103,7 +103,7 @@ src/main/
 | Приём | Где применяется |
 |---|---|
 | **Слоистая архитектура** | `servlet` → `service` → `dao`, слои общаются через интерфейсы и DTO |
-| **DAO** | `Dao<E>`, `CurrenciesDao`, `ExchangeRatesDao` и их JDBC-реализации |
+| **DAO** | `Dao<E>`, `CurrencyDao`, `ExchangeRateDao` и их JDBC-реализации |
 | **DTO (request/response)** | `dto` — наружу не протекают сущности `Currency` / `ExchangeRate` |
 | **Template Method / базовый класс** | `AbstractJsonServlet` — общая работа с JSON и параметрами |
 | **SQL вне кода** | запросы лежат в `resources/sql/*.sql` и читаются через `SqlLoader` |
@@ -248,7 +248,7 @@ curl "http://localhost:8080/currency-exchange-service/exchange?from=EUR&to=JPY&a
 
 ### 1. Настройте путь к базе данных
 
-Путь к файлу SQLite задаётся в [`src/main/resources/db.properties`](./db.properties):
+Путь к файлу SQLite задаётся в [`src/main/resources/data-source.properties`](./db.properties):
 
 ```properties
 url=jdbc:sqlite:/var/lib/tomcat10/data/currency.db
@@ -285,7 +285,7 @@ http://localhost:8080/currency-exchange-service/
 1. Откройте проект как Maven-проект с JDK 21.
 2. Создайте конфигурацию **Tomcat Server → Local** (Tomcat 10.1+) и добавьте артефакт `war exploded`.
 3. В поле *Application context* укажите `/currency-exchange-service`.
-4. Проверьте, что путь в `db.properties` указывает на существующий каталог.
+4. Проверьте, что путь в `data-source.properties` указывает на существующий каталог.
 
 ## ⚠️ Отличия от ТЗ и известные ограничения
 
@@ -303,7 +303,7 @@ http://localhost:8080/currency-exchange-service/
 
 **Валидация и ошибки**
 
-- Проверки данных разбросаны по сервлетам, `DefaultExchangeService` и `CHECK`-ограничениям БД — единого валидатора нет.
+- Проверки данных разбросаны по сервлетам, `ExchangeServiceImpl` и `CHECK`-ограничениям БД — единого валидатора нет.
 - Нарушения `UNIQUE`-ограничений на уровне БД пока приводят к `500` вместо `409` (повторное добавление существующей валюты или пары курсов).
 - Не все обязательные параметры проверяются на `null`: отсутствие `baseCurrencyCode` / `targetCurrencyCode` в `POST /exchangeRates` или `from` / `to` в `GET /exchange` приводит к `NullPointerException` и `500`.
 - Длина `sign` при `POST /currencies` в сервлете не проверяется.
@@ -317,9 +317,9 @@ http://localhost:8080/currency-exchange-service/
 
 **Конфигурация и структура**
 
-- JDBC URL зашит в `db.properties`, переопределить его переменной окружения (например, `DB_URL`) нельзя.
+- JDBC URL зашит в `data-source.properties`, переопределить его переменной окружения (например, `DB_URL`) нельзя.
 - Зависимости собираются в самих сервлетах и сервисах (`new DefaultExchangeService(new JdbcExchangeRatesDao())`), а не через единую точку сборки в `ServletContextListener`.
-- `DefaultExchangeService` совмещает CRUD над курсами и расчёт конвертации — планируется разделение на `ExchangeRateService` и `ExchangeService`.
+- `ExchangeServiceImpl` совмещает CRUD над курсами и расчёт конвертации — планируется разделение на `ExchangeRateService` и `ExchangeService`.
 - В `pom.xml` остался `junit:3.8.1`, хотя тестов в проекте нет.
 - Стартовые данные: курс `RUB → USD = 75.0` в `seed.sql` означает «1 рубль = 75 долларов»; по смыслу здесь нужна пара `USD → RUB`. При желании поправьте seed.
 
