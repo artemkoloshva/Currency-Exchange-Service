@@ -35,17 +35,22 @@ public class AppInitListener implements ServletContextListener {
         BigDecimalParser bigDecimalParser = new BigDecimalParser();
 
         CurrencyValidator currencyValidator = new CurrencyValidator();
-        ExchangeRateValidator exchangeRateValidator = new ExchangeRateValidator(currencyValidator, new BigDecimalParser());
+        ExchangeRateValidator exchangeRateValidator = new ExchangeRateValidator(currencyValidator, bigDecimalParser);
 
         CurrencyService currencyService = new CurrencyServiceImpl(currencyDao, currencyMapper);
         ExchangeRateService exchangeRateService = new ExchangeRateServiceImpl(exchangeRateDao, exchangeRateMapper);
         ExchangeService exchangeService = new ExchangeServiceImpl(exchangeRateDao, currencyMapper);
 
-        register(context, "currencies", new CurrenciesServlet(currencyService, currencyValidator), "/currencies");
-        register(context, "currency", new CurrencyServlet(currencyService, currencyValidator), "/currency/*");
-        register(context, "exchangeRates", new ExchangeRatesServlet(exchangeRateService, exchangeRateValidator, bigDecimalParser), "/exchangeRates");
-        register(context, "exchangeRate", new ExchangeRateServlet(exchangeRateService, exchangeRateValidator, bigDecimalParser), "/exchangeRate/*");
-        register(context, "exchange", new ExchangeServlet(exchangeService, currencyValidator, exchangeRateValidator, bigDecimalParser), "/exchange");
+        register(context, "currencies", new CurrenciesServlet(
+                currencyService, currencyValidator), "/currencies");
+        register(context, "currency", new CurrencyServlet(
+                currencyService, currencyValidator), "/currency/*");
+        register(context, "exchangeRates", new ExchangeRatesServlet(
+                exchangeRateService, exchangeRateValidator, bigDecimalParser), "/exchangeRates");
+        register(context, "exchangeRate", new ExchangeRateServlet(
+                exchangeRateService, exchangeRateValidator, bigDecimalParser), "/exchangeRate/*");
+        register(context, "exchange", new ExchangeServlet(
+                exchangeService, currencyValidator, exchangeRateValidator, bigDecimalParser), "/exchange");
     }
 
     @Override
