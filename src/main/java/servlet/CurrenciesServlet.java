@@ -29,13 +29,13 @@ public class CurrenciesServlet extends AbstractJsonServlet {
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException {
         currencyValidator.validate(request);
 
-        String name = request.getParameter("name");
         String code = request.getParameter("code");
+        String name = request.getParameter("name");
         String sign = request.getParameter("sign");
 
         CurrencyRequest currencyRequest = new CurrencyRequest(
-                name,
                 code.toUpperCase(),
+                name,
                 sign
         );
         CurrencyResponse currencyResponse = currencyService.addCurrency(currencyRequest);
