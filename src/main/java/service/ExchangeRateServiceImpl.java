@@ -3,8 +3,6 @@ package service;
 import dao.ExchangeRateDao;
 import dto.ExchangeRateRequest;
 import dto.ExchangeRateResponse;
-import entity.ExchangeRate;
-import exception.BadRequestException;
 import mapper.ExchangeRateMapper;
 
 import java.util.List;
