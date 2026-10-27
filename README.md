@@ -6,6 +6,7 @@
   <img src="https://img.shields.io/badge/Jakarta%20Servlet-6.0-blueviolet" alt="Jakarta Servlet 6.0"/>
   <img src="https://img.shields.io/badge/Tomcat-10.1%2B-yellow?logo=apachetomcat&logoColor=white" alt="Tomcat 10.1+"/>
   <img src="https://img.shields.io/badge/DB-SQLite-003B57?logo=sqlite&logoColor=white" alt="SQLite"/>
+  <img src="https://img.shields.io/badge/Pool-HikariCP-3a7ca5" alt="HikariCP"/>
   <img src="https://img.shields.io/badge/Build-Maven-C71A36?logo=apachemaven&logoColor=white" alt="Maven"/>
 </p>
 
@@ -17,7 +18,7 @@
 
 ## 📖 О проекте
 
-Учебный проект **«Обмен валют»** курса [`zhukovsd/java-backend-learning-course`](https://zhukovsd.github.io/java-backend-learning-course/). Полное техническое задание — в [`SPEC.md`](./SPEC.md), замечания по итогам код-ревью — в [`REVIEW.md`](./REVIEW.md).
+Учебный проект **«Обмен валют»** курса [`zhukovsd/java-backend-learning-course`](https://zhukovsd.github.io/java-backend-learning-course/). Полное техническое задание — в [`SPEC.md`](./SPEC.md). Замечания первого код-ревью — в [`REVIEW.md`](./REVIEW.md) (это исторический документ: большинство пунктов из него уже исправлено, актуальный статус см. в разделе [«Что изменилось после ревью»](#-что-изменилось-после-ревью)).
 
 Приложение собирается в `WAR`-артефакт и разворачивается на Tomcat. Данные хранятся во встроенной SQLite, отдельный сервер БД не нужен. Схема и начальные данные создаются автоматически при старте приложения.
 
@@ -29,90 +30,104 @@
 - добавлять и изменять обменные курсы;
 - считать конвертацию произвольной суммы из одной валюты в другую.
 
-Удаление записей через API, как и требует ТЗ, не реализовано.
-
-Комментарии автора курса по проекту: [YouTube](https://www.youtube.com/watch?v=013b_b7PszM).
-
-> ⚠️ Раздел [«Отличия от ТЗ и известные ограничения»](#-отличия-от-тз-и-известные-ограничения) — обязательный к прочтению: там перечислено, где реализация сознательно или вынужденно расходится с ТЗ.
+Удаление записей через API, как и требует ТЗ, не реализовано (методы `delete` в DAO есть, но наружу не выставлены).
 
 ## 🛠️ Стек технологий
 
-- **Язык:** Java 21 (`maven-compiler-plugin`, `<release>21</release>`) — в коде используются `record` (для `ErrorResponse`), Stream API, `Optional`.
-- **Веб:** Jakarta Servlet API 6.0 (`jakarta.servlet`, scope `provided`) — нужен контейнер с поддержкой Jakarta EE 10, то есть **Tomcat 10.1+** (на Tomcat 9 и старше не заработает: другой пакет `javax.servlet`).
+- **Язык:** Java 21 (`<release>21</release>`). Используются `record` (DTO и `ErrorResponse`), pattern matching для `instanceof`, `Optional`.
+- **Веб:** Jakarta Servlet API 6.0 (`provided`) — нужен контейнер с Jakarta EE 10, то есть **Tomcat 10.1+** (на Tomcat 9 и старше не заработает: другой пакет `javax.servlet`).
 - **База данных:** SQLite через [`org.xerial:sqlite-jdbc`](https://github.com/xerial/sqlite-jdbc) 3.53.4.0, чистый JDBC (`PreparedStatement`), без ORM.
+- **Пул соединений:** [HikariCP](https://github.com/brettwooldridge/HikariCP) 7.0.2.
+- **Маппинг:** [MapStruct](https://mapstruct.org/) 1.6.3 (entity ↔ DTO) и собственные `ResultSetMapper` (строка БД → entity).
 - **JSON:** [Gson](https://github.com/google/gson) 2.11.0.
-- **Сборка:** Maven, упаковка `war`, итоговое имя артефакта — `currency-exchange-service.war`.
+- **Деньги:** `BigDecimal` во всех слоях (`rate`, `amount`, `convertedAmount`).
+- **Сборка:** Maven, упаковка `war`, имя артефакта — `currency-exchange-service.war`.
 - **Фронтенд:** статическая страница `index.html` на Bootstrap и jQuery (`app.js`), общается с API через AJAX.
 
 ## 🏗️ Архитектура
 
-Приложение разбито на слои: **servlet → service → dao → SQLite**. Наружу между слоями передаются DTO, а не сущности БД.
+Приложение разбито на слои: **servlet → service → dao → SQLite**. Между слоями передаются DTO (`record`), а не сущности БД. Все зависимости создаются в одном месте — `AppInitListener` — и передаются через конструкторы.
 
 ```
 src/main/
 ├── java/
-│   ├── servlet/
-│   │   ├── AbstractJsonServlet              общие утилиты: writeJson/writeError, разбор form-параметров
-│   │   ├── CurrenciesServlet                /currencies          (GET, POST)
-│   │   ├── CurrencyServlet                  /currency/*          (GET)
-│   │   ├── ExchangeRatesServlet             /exchangeRates       (GET, POST)
-│   │   ├── ExchangeRateServlet              /exchangeRate/*      (GET, PATCH)
-│   │   └── ExchangeServlet                  /exchange            (GET)
-│   ├── service/
-│   │   ├── CurrencyService → DefaultCurrencyService
-│   │   └── ExchangeService → DefaultExchangeService     CRUD курсов + расчёт конвертации
-│   ├── dao/
-│   │   ├── Dao<E> (интерфейс)               create / read / readAll / update / delete
-│   │   ├── CurrenciesDao → JdbcCurrenciesDao
-│   │   └── ExchangeRatesDao → JdbcExchangeRatesDao      + операции по кодам валют
-│   ├── entity/
-│   │   └── Currency, ExchangeRate           иммутабельные модели предметной области
-│   ├── dto/
-│   │   ├── CurrencyRequest / CurrencyResponse
-│   │   ├── ExchangeRateRequest / ExchangeRateResponse
-│   │   └── ExchangeRequest / ExchangeResponse
-│   ├── exception/
-│   │   └── AppException → BadRequest-, NotFound-, Conflict-, InternalServerErrorException
 │   ├── listener/
-│   │   └── DbInitListener                   создание схемы и seed-данных при старте
+│   │   └── AppInitListener            точка сборки: DataSource, DAO, сервисы, валидаторы, регистрация сервлетов
+│   ├── filter/
+│   │   └── ExceptionHandlingFilter    единый обработчик исключений → JSON {"message": "..."} + HTTP-код
+│   ├── servlet/
+│   │   ├── AbstractJsonServlet        writeJson / writeError, разбор form-параметров (для PATCH)
+│   │   ├── CurrenciesServlet          /currencies          (GET, POST)
+│   │   ├── CurrencyServlet            /currency/*          (GET)
+│   │   ├── ExchangeRatesServlet       /exchangeRates       (GET, POST)
+│   │   ├── ExchangeRateServlet        /exchangeRate/*      (GET, PATCH)
+│   │   └── ExchangeServlet            /exchange            (GET)
+│   ├── validator/
+│   │   ├── RequestValidator           базовые проверки: isBlank, isValidLength
+│   │   ├── CurrencyValidator          name / code / sign
+│   │   └── ExchangeRateValidator      пара кодов, rate
+│   ├── parser/
+│   │   └── BigDecimalParser           строка → BigDecimal (принимает и «,», и «.»)
+│   ├── service/
+│   │   ├── CurrencyService → CurrencyServiceImpl
+│   │   ├── ExchangeRateService → ExchangeRateServiceImpl     CRUD курсов
+│   │   └── ExchangeService → ExchangeServiceImpl             расчёт конвертации
+│   ├── dao/
+│   │   ├── Dao<E>                     create / read / readAll / update / delete
+│   │   ├── CurrencyDao → JdbcCurrencyDao
+│   │   └── ExchangeRateDao → JdbcExchangeRateDao             + операции по кодам валют
+│   ├── mapper/
+│   │   ├── CurrencyMapper, ExchangeRateMapper                MapStruct: entity ↔ DTO
+│   │   └── ResultSetMapper → CurrencyResultSetMapper, ExchangeRateResultSetMapper
+│   ├── entity/                        Currency, ExchangeRate
+│   ├── dto/                           CurrencyRequest/Response, ExchangeRateRequest/Response, ExchangeRequest/Response
+│   ├── exception/
+│   │   └── AppException → ValidationException (400), NotFoundException (404), ConflictException (409), DatabaseException (500)
+│   ├── db/
+│   │   └── DatabaseInitializer        создание схемы и seed-данных при старте
 │   └── util/
-│       └── SqlLoader                        загрузка .sql-файлов из classpath
+│       ├── DataSourceFactory          HikariCP + SQLite (foreign_keys, WAL, busy_timeout)
+│       ├── PropertiesLoader           чтение настроек: переменная окружения → system property → файл
+│       └── SqlLoader                  загрузка .sql-файлов из classpath
 ├── resources/
-│   ├── db.properties                        JDBC URL базы данных
+│   ├── data-source.properties         URL базы и параметры пула
 │   └── sql/
-│       ├── schema.sql, seed.sql             схема и начальные данные
-│       └── currencies.*.sql, exchange-rates.*.sql   запросы DAO (create / read / read-all / update / delete ...)
+│       ├── schema.sql, seed.sql       схема и начальные данные
+│       └── currencies.*.sql, exchange-rates.*.sql   запросы DAO
 └── webapp/
-    ├── index.html                           веб-интерфейс
+    ├── index.html                     веб-интерфейс
     ├── css/bootstrap*.css
     └── js/app.js, bootstrap*.js, jquery-3.6.3.min.js
 ```
 
 ### Как это работает
 
-1. **Старт.** `DbInitListener` (`@WebListener`) читает `data-source.properties`, открывает соединение с SQLite, в одной транзакции выполняет `schema.sql` (`CREATE TABLE IF NOT EXISTS`), а если таблица `currencies` пуста — ещё и `seed.sql`. Повторные запуски данные не затирают.
-2. **Запрос.** Сервлет (`@WebServlet`) достаёт параметры из адреса/формы, проводит первичные проверки и вызывает сервис.
-3. **Сервис** содержит бизнес-логику (в том числе расчёт конвертации) и переводит сущности в DTO.
-4. **DAO** выполняет SQL из файлов в `resources/sql`, подгружаемых через `SqlLoader`, и мапит `ResultSet` в сущности.
-5. **Ответ.** `AbstractJsonServlet` сериализует DTO в JSON (Gson, UTF-8). Ошибки возвращаются в виде `{"message": "..."}`.
+1. **Старт.** `AppInitListener` (`@WebListener`) создаёт пул `HikariDataSource` через `DataSourceFactory`, `DatabaseInitializer` в одной транзакции выполняет `schema.sql` (`CREATE TABLE IF NOT EXISTS`), а если таблица `currencies` пуста — ещё и `seed.sql`. Затем собираются DAO, сервисы, валидаторы и программно регистрируются сервлеты. Повторные запуски данные не затирают. При остановке приложения пул закрывается.
+2. **Запрос.** Сервлет достаёт параметры из адреса/формы, вызывает валидатор и передаёт DTO в сервис.
+3. **Сервис** содержит бизнес-логику (в том числе расчёт конвертации) и переводит сущности в DTO через MapStruct.
+4. **DAO** выполняет SQL из файлов в `resources/sql`. Каждый метод берёт соединение из пула в `try-with-resources` и возвращает его сразу после запроса.
+5. **Ответ.** `AbstractJsonServlet` сериализует DTO в JSON (Gson, UTF-8).
+6. **Ошибки.** Сервлеты и DAO просто бросают исключения. `ExceptionHandlingFilter` (`@WebFilter("/*")`) перехватывает их и превращает в `{"message": "..."}` с нужным HTTP-кодом. Всё неожиданное отдаётся как `500` с сообщением `Unknown error`.
 
-> 💡 `PATCH` не поддерживается `HttpServlet` «из коробки» (нет `doPatch`), поэтому `ExchangeRateServlet` переопределяет `service()` и вручную перенаправляет `PATCH` в собственный метод `doPatch`. Тело `PATCH`-запроса Tomcat не разбирает в параметры, поэтому `AbstractJsonServlet.getFormParameter()` вручную парсит `x-www-form-urlencoded`.
+> 💡 `PATCH` не поддерживается `HttpServlet` «из коробки» (нет `doPatch`), поэтому `ExchangeRateServlet` переопределяет `service()` и вручную направляет `PATCH` в собственный метод `doPatch`. Тело `PATCH`-запроса Tomcat не разбирает в параметры, поэтому `AbstractJsonServlet.getFormParameter()` вручную парсит `x-www-form-urlencoded`.
 
 ### Используемые приёмы
 
 | Приём | Где применяется |
 |---|---|
 | **Слоистая архитектура** | `servlet` → `service` → `dao`, слои общаются через интерфейсы и DTO |
-| **DAO** | `Dao<E>`, `CurrencyDao`, `ExchangeRateDao` и их JDBC-реализации |
-| **DTO (request/response)** | `dto` — наружу не протекают сущности `Currency` / `ExchangeRate` |
-| **Template Method / базовый класс** | `AbstractJsonServlet` — общая работа с JSON и параметрами |
-| **SQL вне кода** | запросы лежат в `resources/sql/*.sql` и читаются через `SqlLoader` |
-| **Иерархия исключений** | `AppException` и наследники соответствуют HTTP-кодам ответа |
+| **Внедрение зависимостей через конструктор** | всё собирается в `AppInitListener` |
+| **DAO + пул соединений** | `Dao<E>`, `CurrencyDao`, `ExchangeRateDao`, `HikariDataSource` |
+| **DTO на `record`** | `dto` — наружу не протекают сущности `Currency` / `ExchangeRate` |
+| **Централизованная обработка ошибок** | `ExceptionHandlingFilter` + иерархия `AppException` |
+| **Отдельные валидаторы** | `CurrencyValidator`, `ExchangeRateValidator` |
+| **SQL вне кода** | запросы лежат в `resources/sql/*.sql`, читаются через `SqlLoader` |
+| **Маппинг** | MapStruct для DTO, `ResultSetMapper` для строк БД |
 | **`Optional` + композиция стратегий** | `findRate(...).or(() -> findRateViaUsd(...))` в расчёте конвертации |
 
 ## 🗄️ База данных
 
-SQLite, таблицы создаются при старте из [`schema.sql`](./schema.sql).
+SQLite, таблицы создаются при старте из [`schema.sql`](./src/main/resources/sql/schema.sql).
 
 ### Таблица `currencies`
 
@@ -128,21 +143,23 @@ SQLite, таблицы создаются при старте из [`schema.sql`
 | Поле | Тип | Ограничения |
 |---|---|---|
 | `id` | INTEGER | первичный ключ, автоинкремент |
-| `base_currency_code` | TEXT | `NOT NULL`, `CHECK (LENGTH = 3)`, внешний ключ → `currencies(code)` |
-| `target_currency_code` | TEXT | `NOT NULL`, `CHECK (LENGTH = 3)`, внешний ключ → `currencies(code)` |
+| `base_currency_id` | INTEGER | `NOT NULL`, внешний ключ → `currencies(id)` |
+| `target_currency_id` | INTEGER | `NOT NULL`, внешний ключ → `currencies(id)` |
 | `rate` | NUMERIC | `NOT NULL`, `CHECK (rate > 0)` |
 
-Пара `(base_currency_code, target_currency_code)` уникальна.
+Пара `(base_currency_id, target_currency_id)` уникальна. Внешние ключи включены для каждого соединения пула (`foreign_keys=true` в `DataSourceFactory`).
 
-> ⚠️ **Отличие от ТЗ.** По ТЗ курс должен ссылаться на валюты через `BaseCurrencyId` / `TargetCurrencyId` → `Currencies.ID`. В проекте вместо ID хранятся **коды валют**. Подробности — в разделе [«Отличия от ТЗ»](#-отличия-от-тз-и-известные-ограничения).
+> Схема соответствует ТЗ: курс ссылается на валюты по `BaseCurrencyId` / `TargetCurrencyId`. Названия таблиц и колонок — в `snake_case`.
 
 ### Начальные данные
 
-При первом запуске загружаются 11 валют (`USD`, `RUB`, `EUR`, `GBP`, `JPY`, `AUD`, `CAD`, `CHF`, `CNY`, `SEK`, `NZD`) и 10 курсов: `USD → EUR/GBP/JPY/AUD/CAD/CHF/CNY/SEK/NZD` и `RUB → USD`.
+При первом запуске загружаются 11 валют (`USD`, `RUB`, `EUR`, `GBP`, `JPY`, `AUD`, `CAD`, `CHF`, `CNY`, `SEK`, `NZD`) и 10 курсов, у всех базовая валюта — `USD`: `USD → EUR/GBP/JPY/AUD/CAD/CHF/CNY/SEK/NZD/RUB`.
+
+> ⚠️ `seed.sql` выполняется только при **пустой** таблице `currencies`. Если база уже создана, изменения в `seed.sql` на неё не повлияют: удалите файл БД или поправьте курс через `PATCH`. Курс `USD → RUB` должен означать «сколько рублей за 1 доллар» (порядка 70–90), а не `0.014`.
 
 ## 🌐 REST API
 
-Все ответы — JSON в UTF-8. Данные в `POST`/`PATCH` передаются как `application/x-www-form-urlencoded`. Коды валют регистронезависимы — приводятся к верхнему регистру.
+Все ответы — JSON в UTF-8. Данные в `POST`/`PATCH` передаются как `application/x-www-form-urlencoded`. Коды валют регистронезависимы — приводятся к верхнему регистру. Числа с запятой (`3,5`) принимаются так же, как с точкой.
 
 Формат ошибки для всех запросов:
 
@@ -152,13 +169,20 @@ SQLite, таблицы создаются при старте из [`schema.sql`
 }
 ```
 
+| Код | Когда |
+|---|---|
+| `400` | не передан обязательный параметр, он пустой, слишком длинный или не является числом; `rate`/`amount` ≤ 0 |
+| `404` | валюта или курс не найдены; при `POST /exchangeRates` одной из валют пары нет |
+| `409` | валюта или пара курсов уже существует |
+| `500` | ошибка БД или непредвиденная ошибка |
+
 ### Валюты
 
 | Метод | Путь | Описание | Коды ответа |
 |---|---|---|---|
 | `GET` | `/currencies` | список всех валют | `200`, `500` |
 | `GET` | `/currency/{CODE}` | валюта по коду, например `/currency/EUR` | `200`, `400`, `404`, `500` |
-| `POST` | `/currencies` | добавить валюту, поля: `name`, `code`, `sign` | `201`, `400`, `409`, `500` |
+| `POST` | `/currencies` | добавить валюту, поля: `name`, `code`, `sign` (до 3 символов) | `201`, `400`, `409`, `500` |
 
 Пример ответа:
 
@@ -180,6 +204,8 @@ SQLite, таблицы создаются при старте из [`schema.sql`
 | `POST` | `/exchangeRates` | добавить курс, поля: `baseCurrencyCode`, `targetCurrencyCode`, `rate` | `201`, `400`, `404`, `409`, `500` |
 | `PATCH` | `/exchangeRate/{BASE}{TARGET}` | изменить курс, поле: `rate` | `200`, `400`, `404`, `500` |
 
+Пара `A → B` и обратная ей `B → A` — независимые записи: добавление `B → A` при существующей `A → B` разрешено, `409` возвращается только при повторе той же пары.
+
 Пример ответа:
 
 ```json
@@ -200,18 +226,20 @@ SQLite, таблицы создаются при старте из [`schema.sql`
     "baseCurrency": { "id": 1, "code": "USD", "name": "United States Dollar", "sign": "$" },
     "targetCurrency": { "id": 6, "code": "AUD", "name": "Australian Dollar", "sign": "$" },
     "rate": 1.35,
-    "amount": 10.0,
-    "convertedAmount": 13.5
+    "amount": 10,
+    "convertedAmount": 13.50
 }
 ```
 
 Курс между валютами `A` и `B` определяется по трём сценариям (в таком порядке):
 
-1. **Прямой** — в таблице есть пара `A → B`, берётся её курс.
+1. **Прямой** — в таблице есть пара `A → B`, берётся её курс как есть.
 2. **Обратный** — есть пара `B → A`, курс `A → B` = `1 / rate(B → A)`.
 3. **Кросс-курс через USD** — есть пары `USD → A` и `USD → B` (каждая — прямая или обратная), курс `A → B` = `rate(USD → B) / rate(USD → A)`.
 
 Если ни один сценарий не подошёл — `404`.
+
+**Округление.** Курсы, вычисленные для обратного и кросс-сценариев, округляются до 6 знаков (`HALF_UP`). Итоговая `convertedAmount` — до 2 знаков (`HALF_UP`).
 
 ### Примеры запросов
 
@@ -238,6 +266,32 @@ curl "http://localhost:8080/currency-exchange-service/exchange?from=EUR&to=JPY&a
 
 Страница `index.html` (Bootstrap + jQuery) доступна по корню приложения: `http://<host>:8080/currency-exchange-service/`. На ней можно посмотреть список валют и курсов, добавить валюту, добавить и изменить курс, выполнить конвертацию. Адрес API формируется в `app.js` как `window.location.origin + "/currency-exchange-service"`, поэтому **контекстный путь приложения должен совпадать с именем WAR-файла** (`currency-exchange-service`).
 
+## ⚙️ Конфигурация
+
+Настройки лежат в [`src/main/resources/data-source.properties`](./src/main/resources/data-source.properties):
+
+```properties
+url=jdbc:sqlite:./data/currency.db
+maximumPoolSize=10
+minimumIdle=2
+connectionTimeout=30000
+idleTimeout=600000
+maxLifetime=1800000
+```
+
+- **`url`** можно переопределить без пересборки: переменной окружения или system property `DB_URL` (приоритет: окружение → system property → файл). Родительский каталог файла БД создаётся автоматически. Относительный путь считается от рабочей директории процесса Tomcat — на сервере лучше задавать абсолютный.
+- **`maximumPoolSize`** — размер пула. Значение `2` слишком мало, если сервис получает пачки одновременных запросов (например, при проверке ботом): запросы ждут свободное соединение до `connectionTimeout`. Рекомендуется `10`. SQLite в режиме WAL читает параллельно, а записи выстраиваются в очередь (`busy_timeout=5000`).
+- Параметры `foreign_keys`, `journal_mode=WAL` и `busy_timeout` задаются в `DataSourceFactory`.
+
+Пример переопределения пути к БД на сервере:
+
+```bash
+export DB_URL=jdbc:sqlite:/var/lib/tomcat10/data/currency.db
+# или в setenv.sh Tomcat: CATALINA_OPTS="-DDB_URL=jdbc:sqlite:/var/lib/tomcat10/data/currency.db"
+```
+
+Каталог должен существовать, а пользователь, под которым работает Tomcat, — иметь право писать в него.
+
 ## 🚀 Сборка и запуск
 
 ### Требования
@@ -246,24 +300,16 @@ curl "http://localhost:8080/currency-exchange-service/exchange?from=EUR&to=JPY&a
 - Maven 3.9+
 - Apache Tomcat **10.1+**
 
-### 1. Настройте путь к базе данных
-
-Путь к файлу SQLite задаётся в [`src/main/resources/data-source.properties`](./db.properties):
-
-```properties
-url=jdbc:sqlite:/var/lib/tomcat10/data/currency.db
-```
-
-> ⚠️ По умолчанию значение рассчитано на Linux-сервер с Tomcat 10 из пакетного менеджера. **На другой машине его нужно поменять** (например, `jdbc:sqlite:/home/user/currency.db` или `jdbc:sqlite:C:/data/currency.db`) и **пересобрать приложение** — переопределения через переменную окружения пока нет (см. [ограничения](#-отличия-от-тз-и-известные-ограничения)). Каталог должен существовать, а пользователь, под которым работает Tomcat, — иметь право писать в него. Сам файл БД создаётся автоматически.
-
-### 2. Соберите WAR
+### 1. Соберите WAR
 
 ```bash
 mvn clean package
 # результат: target/currency-exchange-service.war
 ```
 
-### 3. Разверните на Tomcat
+MapStruct генерирует реализации мапперов на этапе компиляции (annotation processor настроен в `pom.xml`).
+
+### 2. Разверните на Tomcat
 
 Скопируйте WAR в каталог `webapps` Tomcat (или загрузите через Manager App) и запустите сервер:
 
@@ -280,69 +326,45 @@ http://localhost:8080/currency-exchange-service/
 
 На удалённом сервере адрес будет `http://<server_ip>:8080/currency-exchange-service/`.
 
+> ⚠️ При обновлении версии на сервере удалите старый развёрнутый каталог `webapps/currency-exchange-service/` вместе со старым WAR и **перезапустите Tomcat**, иначе может продолжить работать прежняя сборка.
+
 ### Запуск из IntelliJ IDEA
 
 1. Откройте проект как Maven-проект с JDK 21.
 2. Создайте конфигурацию **Tomcat Server → Local** (Tomcat 10.1+) и добавьте артефакт `war exploded`.
 3. В поле *Application context* укажите `/currency-exchange-service`.
-4. Проверьте, что путь в `data-source.properties` указывает на существующий каталог.
+4. При необходимости задайте `DB_URL` в переменных окружения конфигурации.
 
-## ⚠️ Отличия от ТЗ и известные ограничения
+## ✅ Что изменилось после ревью
 
-Ниже — честный список расхождений с [`SPEC.md`](./SPEC.md) и недоработок. Большая часть из них разобрана в [`REVIEW.md`](./REVIEW.md) и является планом улучшений.
+По сравнению с версией, с которой писался [`REVIEW.md`](./REVIEW.md), реализовано:
 
-**Схема БД**
+- схема приведена к ТЗ: курсы ссылаются на валюты по `id`;
+- все денежные значения переведены с `float` на `BigDecimal`;
+- вместо одного долгоживущего `Connection` — пул HikariCP, соединения берутся и возвращаются на каждый запрос;
+- внешние ключи включены для всех соединений;
+- зависимости собираются в `AppInitListener`, а не внутри сервлетов и сервисов;
+- обработка ошибок вынесена в `ExceptionHandlingFilter`, иерархия исключений сохраняет причину (`cause`);
+- валидация вынесена в `CurrencyValidator` / `ExchangeRateValidator`, добавлена проверка длины `sign` и обязательных параметров (`400` вместо `500` / `NullPointerException`);
+- нарушения `UNIQUE` дают `409`, отсутствие одной из валют при добавлении курса — `404`;
+- убрано ограничение на «зеркальные» пары;
+- `ExchangeServiceImpl` и `ExchangeRateServiceImpl` разделены;
+- DAO переименованы в единственное число, DTO — `record`, добавлены MapStruct-мапперы;
+- JDBC URL можно переопределить через `DB_URL`;
+- исправлен `PATCH /exchangeRate/{pair}`: используется запрос по кодам валют (`exchange-rates.update-by-currency-codes.sql`);
+- исправлена утечка соединения в `JdbcCurrencyDao.readByCode`, из-за которой при пуле из 2 соединений сервис переставал отвечать под нагрузкой.
 
-- В `exchange_rates` хранятся **коды валют** (`base_currency_code`, `target_currency_code`), а не `BaseCurrencyId` / `TargetCurrencyId`, как требует ТЗ. Это было сделано ради упрощения запросов (не нужен предварительный поиск ID валюты по коду), но противоречит ТЗ и делает схему менее нормализованной: код валюты дублируется в двух таблицах. Приведение к схеме из ТЗ — в планах.
-- Имена таблиц и колонок — в `snake_case` (`currencies`, `exchange_rates`), а не `Currencies` / `ExchangeRates`, как в ТЗ; поле `name` вместо `FullName`.
-- `rate` хранится как `NUMERIC` без явного ограничения в 6 знаков после запятой.
+## ⚠️ Известные ограничения
 
-**Числа**
+- В проекте нет автотестов — проверка выполняется ботом и вручную.
+- `ExchangeRateMapper.toEntity(...)` и `ExchangeServiceImpl.hasMirrorExchangeRate(...)` сейчас не используются и могут быть удалены.
+- Сообщение валидации суммы в `/exchange` ссылается на поле `rate` (используется общий `validateRate`).
+- Курсы в обратном и кросс-сценариях хранят 6 знаков после запятой; для валют с очень маленьким курсом (например, `JPY → USD`) точность итоговой суммы ограничена этим значением.
+- Не проверяется, что `from` и `to` в `/exchange` различаются.
 
-- Для `rate`, `amount` и `convertedAmount` используется `float`. Для денежных расчётов это плохая практика (накопление погрешности), правильное решение — `BigDecimal`.
+## 🧪 Проверка работоспособности
 
-**Валидация и ошибки**
-
-- Проверки данных разбросаны по сервлетам, `ExchangeServiceImpl` и `CHECK`-ограничениям БД — единого валидатора нет.
-- Нарушения `UNIQUE`-ограничений на уровне БД пока приводят к `500` вместо `409` (повторное добавление существующей валюты или пары курсов).
-- Не все обязательные параметры проверяются на `null`: отсутствие `baseCurrencyCode` / `targetCurrencyCode` в `POST /exchangeRates` или `from` / `to` в `GET /exchange` приводит к `NullPointerException` и `500`.
-- Длина `sign` при `POST /currencies` в сервлете не проверяется.
-- Обработка исключений дублируется в каждом сервлете (`try-catch`), централизованного обработчика нет.
-- `POST /exchangeRates` запрещает добавление пары `B → A`, если уже существует `A → B` (возвращается `400`). ТЗ этого не требует: уникальной должна быть только «прямая» пара, а обратный курс может отличаться.
-
-**Соединения с БД**
-
-- Каждый DAO-объект держит одно `Connection` на всё время жизни, а сервлеты создают DAO в полях. Сервлеты — многопоточные объекты, поэтому это единая точка конкуренции; нужен пул соединений (например, HikariCP) или `DataSource`.
-- Внешние ключи (`PRAGMA foreign_keys = ON`) включаются только в соединении инициализации, в соединениях DAO — нет.
-
-**Конфигурация и структура**
-
-- JDBC URL зашит в `data-source.properties`, переопределить его переменной окружения (например, `DB_URL`) нельзя.
-- Зависимости собираются в самих сервлетах и сервисах (`new DefaultExchangeService(new JdbcExchangeRatesDao())`), а не через единую точку сборки в `ServletContextListener`.
-- `ExchangeServiceImpl` совмещает CRUD над курсами и расчёт конвертации — планируется разделение на `ExchangeRateService` и `ExchangeService`.
-- В `pom.xml` остался `junit:3.8.1`, хотя тестов в проекте нет.
-- Стартовые данные: курс `RUB → USD = 75.0` в `seed.sql` означает «1 рубль = 75 долларов»; по смыслу здесь нужна пара `USD → RUB`. При желании поправьте seed.
-
-**Статика**
-
-- В присланном архиве файл `jquery-3.6.3.min.js` пустой (0 байт) — если веб-интерфейс не работает, убедитесь, что в `webapp/js/` лежит настоящая библиотека jQuery.
-
-## ✅ Проверка работоспособности
-
-Корректность API проверялась ботом [@currency_exchange_api_bot](https://t.me/currency_exchange_api_bot) из материалов курса. На момент ревью: **98 кейсов — 91 прошёл, 7 упали** (`TC-018`, `TC-025a`, `TC-054`, `TC-056`, `TC-058`, `TC-091`, `TC-092`) — все относятся к пунктам про `409` при дубликатах, валидацию `sign` и `NullPointerException` при отсутствии параметров, перечисленным выше. Подробности — в [`REVIEW.md`](./REVIEW.md).
-
-## 🗺️ План доработок
-
-По итогам ревью, в порядке приоритета:
-
-1. Исправить непройденные кейсы бота (`409` вместо `500`, `400` вместо `500` при отсутствии параметров, проверка `sign`).
-2. Перевести `rate`, `amount`, `convertedAmount` на `BigDecimal` во всех слоях.
-3. Заменить одно долгоживущее `Connection` на `DataSource` / HikariCP.
-4. Вынести сборку зависимостей в `ServletContextListener` (DI через конструкторы), а обработку исключений — в `@WebFilter`.
-5. Вынести валидацию и нормализацию входных данных в отдельный класс-валидатор.
-6. Привести схему БД к ТЗ (`BaseCurrencyId` / `TargetCurrencyId`), убрать запрет на «зеркальную» пару.
-7. Переименовать DAO в единственное число (`CurrencyDao`, `ExchangeRateDao`), заменить DTO на `record`, убрать неиспользуемый код и лишние зависимости, вынести `CurrencyMapper`.
-8. Добавить переопределение JDBC URL через переменную окружения `DB_URL`.
+Корректность API проверялась ботом [@currency_exchange_api_bot](https://t.me/currency_exchange_api_bot) из материалов курса (запускается командой `/run <url>`). Результат последнего прогона (27.10.2026): **98 кейсов — 96 прошли, 2 упали** (`TC-033`, `TC-034`). В обоих упавших кейсах бот проверял «несуществующую» валюту, но отправил запрос `GET /currency/JPY`, а такая валюта в базе есть, поэтому `200` — корректный ответ сервера. Для отсутствующего кода (например, `/currency/ZZZ`) приложение возвращает `404` с `{"message": ...}`. Все три сценария конвертации (`TC-079`–`TC-090`), валидация, `409` и `404` проходят.
 
 ## 🎓 Контекст
 
@@ -351,4 +373,3 @@ http://localhost:8080/currency-exchange-service/
 ---
 
 <p align="center"><i>Учебный проект. Реализован в образовательных целях для практики построения REST API на сервлетах, работы с SQL и слоистой архитектуры.</i></p>
-
