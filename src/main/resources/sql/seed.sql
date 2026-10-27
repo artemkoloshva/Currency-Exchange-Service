@@ -12,6 +12,7 @@ INSERT INTO currencies (code, name, sign) VALUES
 ('NZD', 'New Zealand Dollar', '$');
 
 INSERT INTO exchange_rates (base_currency_id, target_currency_id, rate) VALUES
+(1, 2, 70.0),
 (1, 3, 0.85),
 (1, 4, 0.75),
 (1, 5, 110.0),
@@ -20,5 +21,4 @@ INSERT INTO exchange_rates (base_currency_id, target_currency_id, rate) VALUES
 (1, 8, 0.92),
 (1, 9, 6.45),
 (1, 10, 8.65),
-(1, 11, 1.42),
-(1, 2, 0.014);
+(1, 11, 1.42);
