@@ -52,7 +52,7 @@ public class JdbcExchangeRateDao implements ExchangeRateDao {
 
     public ExchangeRate createByCodes(String baseCurrencyCode, String targetCurrencyCode, BigDecimal rate) {
         try(Connection connection = dataSource.getConnection();
-                PreparedStatement statement = connection.prepareStatement(SQL_CREATE_BY_CURRENCY_CODES)) {
+            PreparedStatement statement = connection.prepareStatement(SQL_CREATE_BY_CURRENCY_CODES)) {
             statement.setString(1, baseCurrencyCode);
             statement.setString(2, targetCurrencyCode);
             statement.setBigDecimal(3, rate);
@@ -61,12 +61,22 @@ public class JdbcExchangeRateDao implements ExchangeRateDao {
                 throw new ConflictException(
                         "Error creating exchange rate for " + baseCurrencyCode + "/" + targetCurrencyCode);
             }
-
-            return readByCurrencyCodes(baseCurrencyCode, targetCurrencyCode);
         } catch (SQLException e) {
+            if (e instanceof org.sqlite.SQLiteException se) {
+                if (se.getResultCode() == org.sqlite.SQLiteErrorCode.SQLITE_CONSTRAINT_UNIQUE) {
+                    throw new ConflictException(
+                            "The exchange rate already exists: " + baseCurrencyCode + "/" + targetCurrencyCode);
+                }
+                if (se.getResultCode() == org.sqlite.SQLiteErrorCode.SQLITE_CONSTRAINT_NOTNULL) {
+                    throw new NotFoundException(
+                            "One or both currencies of the pair " + baseCurrencyCode + "/" + targetCurrencyCode + " not found");
+                }
+            }
             throw new DatabaseException(
-                    "Error creating exchange rate for " + baseCurrencyCode + "/" + targetCurrencyCode);
+                    "Error creating exchange rate for " + baseCurrencyCode + "/" + targetCurrencyCode, e);
         }
+
+        return readByCurrencyCodes(baseCurrencyCode, targetCurrencyCode);
     }
 
     @Override
@@ -130,21 +140,21 @@ public class JdbcExchangeRateDao implements ExchangeRateDao {
     @Override
     public ExchangeRate update(ExchangeRate entity) {
         try(Connection connection = dataSource.getConnection();
-                PreparedStatement statement = connection.prepareStatement(SQL_UPDATE)) {
+            PreparedStatement statement = connection.prepareStatement(SQL_UPDATE)) {
             statement.setBigDecimal(1, entity.getRate());
             statement.setInt(2, entity.getId());
             statement.executeUpdate();
-
-            return readByCurrencyCodes(entity.getBaseCurrency().getCode(), entity.getTargetCurrency().getCode());
         } catch (SQLException e) {
             throw new DatabaseException(
-                    "Error updating exchange rate with ID: " + entity.getId());
+                    "Error updating exchange rate with ID: " + entity.getId(), e);
         }
+
+        return readByCurrencyCodes(entity.getBaseCurrency().getCode(), entity.getTargetCurrency().getCode());
     }
 
     public ExchangeRate updateByCodes(String baseCurrencyCode, String targetCurrencyCode, BigDecimal rate) {
         try(Connection connection = dataSource.getConnection();
-                PreparedStatement statement = connection.prepareStatement(SQL_UPDATE)) {
+            PreparedStatement statement = connection.prepareStatement(SQL_UPDATE_BY_CURRENCY_CODES)) {
             statement.setBigDecimal(1, rate);
             statement.setString(2, baseCurrencyCode);
             statement.setString(3, targetCurrencyCode);
@@ -153,12 +163,12 @@ public class JdbcExchangeRateDao implements ExchangeRateDao {
                 throw new NotFoundException(
                         "Exchange rate for " + baseCurrencyCode + "/" + targetCurrencyCode + " not found");
             }
-
-            return readByCurrencyCodes(baseCurrencyCode, targetCurrencyCode);
         } catch (SQLException e) {
             throw new DatabaseException(
-                    "Error updating exchange rate for " + baseCurrencyCode + "/" + targetCurrencyCode);
+                    "Error updating exchange rate for " + baseCurrencyCode + "/" + targetCurrencyCode, e);
         }
+
+        return readByCurrencyCodes(baseCurrencyCode, targetCurrencyCode);
     }
 
     @Override

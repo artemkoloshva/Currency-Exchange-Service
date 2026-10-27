@@ -31,7 +31,7 @@ public class JdbcCurrencyDao implements CurrencyDao {
     @Override
     public Currency create(Currency entity) {
         try(Connection connection = dataSource.getConnection();
-                PreparedStatement statement = connection.prepareStatement(SQL_CREATE)) {
+            PreparedStatement statement = connection.prepareStatement(SQL_CREATE)) {
             statement.setString(1, entity.getCode());
             statement.setString(2, entity.getName());
             statement.setString(3, entity.getSign());
@@ -41,8 +41,10 @@ public class JdbcCurrencyDao implements CurrencyDao {
                         "The inserted currency already exists: " + entity.getCode());
             }
         } catch (SQLException e) {
-            throw new DatabaseException(
-                    "Error creating currency: " + entity.getCode());
+            if (e instanceof org.sqlite.SQLiteException se && se.getResultCode() == org.sqlite.SQLiteErrorCode.SQLITE_CONSTRAINT_UNIQUE) {
+                throw new ConflictException("The inserted currency already exists: " + entity.getCode());
+            }
+            throw new DatabaseException("Error creating currency: " + entity.getCode(), e);
         }
 
         return readByCode(entity.getCode());
@@ -51,7 +53,7 @@ public class JdbcCurrencyDao implements CurrencyDao {
     @Override
     public Currency read(int id) {
         try(Connection connection = dataSource.getConnection();
-                PreparedStatement statement = connection.prepareStatement(SQL_READ)) {
+            PreparedStatement statement = connection.prepareStatement(SQL_READ)) {
             statement.setInt(1, id);
             ResultSet resultSet = statement.executeQuery();
 
@@ -63,14 +65,14 @@ public class JdbcCurrencyDao implements CurrencyDao {
             return new CurrencyResultSetMapper().map(resultSet);
         } catch (SQLException e) {
             throw new DatabaseException(
-                    "Error reading currency with id: " + id);
+                    "Error reading currency with id: " + id, e);
         }
     }
 
     @Override
     public List<Currency> readAll() {
         try(Connection connection = dataSource.getConnection();
-                PreparedStatement statement = connection.prepareStatement(SQL_READ_ALL)) {
+            PreparedStatement statement = connection.prepareStatement(SQL_READ_ALL)) {
             ResultSet resultSet = statement.executeQuery();
             List<Currency> currencies = new ArrayList<>();
             ResultSetMapper<Currency> mapper = new CurrencyResultSetMapper();
@@ -82,14 +84,14 @@ public class JdbcCurrencyDao implements CurrencyDao {
             return currencies;
         } catch (SQLException e) {
             throw new DatabaseException(
-                    "Error reading all currencies");
+                    "Error reading all currencies", e);
         }
     }
 
     @Override
     public Currency readByCode(String code) {
         try(Connection connection = dataSource.getConnection();
-                PreparedStatement statement = dataSource.getConnection().prepareStatement(SQL_READ_BY_CODE)) {
+            PreparedStatement statement = connection.prepareStatement(SQL_READ_BY_CODE)) {
             statement.setString(1, code);
             ResultSet resultSet = statement.executeQuery();
 
@@ -101,14 +103,14 @@ public class JdbcCurrencyDao implements CurrencyDao {
             return new CurrencyResultSetMapper().map(resultSet);
         } catch (SQLException e) {
             throw new DatabaseException(
-                    "Error reading currency by code: " + code);
+                    "Error reading currency by code: " + code, e);
         }
     }
 
     @Override
     public Currency update(Currency entity) {
         try(Connection connection = dataSource.getConnection();
-                PreparedStatement statement = connection.prepareStatement(SQL_UPDATE)) {
+            PreparedStatement statement = connection.prepareStatement(SQL_UPDATE)) {
             statement.setString(1, entity.getName());
             statement.setString(2, entity.getSign());
             statement.setInt(3, entity.getId());
@@ -117,18 +119,18 @@ public class JdbcCurrencyDao implements CurrencyDao {
                 throw new NotFoundException(
                         "Currency with id " + entity.getId() + " not found");
             }
-
-            return readByCode(entity.getCode());
         } catch (SQLException e) {
             throw new DatabaseException(
-                    "Error updating currency with id: " + entity.getId());
+                    "Error updating currency with id: " + entity.getId(), e);
         }
+
+        return readByCode(entity.getCode());
     }
 
     @Override
     public Currency updateByCode(Currency entity) {
         try(Connection connection = dataSource.getConnection();
-                PreparedStatement statement = connection.prepareStatement(SQL_UPDATE_BY_CODE)) {
+            PreparedStatement statement = connection.prepareStatement(SQL_UPDATE_BY_CODE)) {
             statement.setString(1, entity.getName());
             statement.setString(2, entity.getSign());
             statement.setString(3, entity.getCode());
@@ -137,18 +139,18 @@ public class JdbcCurrencyDao implements CurrencyDao {
                 throw new NotFoundException(
                         "Currency with code " + entity.getCode() + " not found");
             }
-
-            return readByCode(entity.getCode());
         } catch (SQLException e) {
             throw new DatabaseException(
-                    "Error updating currency by code: " + entity.getCode());
+                    "Error updating currency by code: " + entity.getCode(), e);
         }
+
+        return readByCode(entity.getCode());
     }
 
     @Override
     public void delete(int id) {
         try(Connection connection = dataSource.getConnection();
-                PreparedStatement statement = connection.prepareStatement(SQL_DELETE)) {
+            PreparedStatement statement = connection.prepareStatement(SQL_DELETE)) {
             statement.setInt(1, id);
 
             if (statement.executeUpdate() == 0) {
@@ -157,7 +159,7 @@ public class JdbcCurrencyDao implements CurrencyDao {
             }
         } catch (SQLException e) {
             throw new DatabaseException(
-                    "Error deleting currency with id: " + id);
+                    "Error deleting currency with id: " + id, e);
         }
     }
 }
